@@ -1,6 +1,5 @@
 use bincode::{config, decode_from_slice};
 use clap::Parser;
-use ferris::kvstore::command;
 use slog::{info, o, warn, Drain, Logger};
 use slog_term::PlainSyncDecorator;
 use std::{
@@ -10,6 +9,7 @@ use std::{
     net::{TcpListener, TcpStream},
     usize,
 };
+
 
 #[derive(Clone, Copy)]
 enum Engine {

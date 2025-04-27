@@ -1,11 +1,8 @@
-use bincode::{
-    config::{self, Config},
-    encode_to_vec,
-};
+use bincode::{config, encode_to_vec};
 use clap::{Parser, Subcommand};
 use serde::Serialize;
 use std::{
-    io::{Read, Write},
+    io::Write,
     net::TcpStream,
 };
 
