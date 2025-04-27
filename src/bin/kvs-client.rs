@@ -1,7 +1,13 @@
-use bincode::{config::{self, Config}, encode_to_vec};
+use bincode::{
+    config::{self, Config},
+    encode_to_vec,
+};
 use clap::{Parser, Subcommand};
 use serde::Serialize;
-use std::{io::{Read, Write}, net::TcpStream};
+use std::{
+    io::{Read, Write},
+    net::TcpStream,
+};
 
 // Cli Parser
 #[derive(Parser)]
@@ -29,9 +35,6 @@ enum Commands {
     rm { key: String },
 }
 
-
-
-
 fn main() {
     let cli = Cli::parse();
     let config = config::standard();
@@ -50,13 +53,19 @@ fn main() {
 
     match cli.command.unwrap() {
         Commands::set { key, val } => {
-            
             let command = [0_u8];
 
             let bytekey = encode_to_vec(val, config).unwrap();
             let byteval = encode_to_vec(key, config).unwrap();
 
-            println!("{:?} {:?} {:?} {:?} {:?}",command.clone(),bytekey.len(),byteval.len(),bytekey.clone(),byteval.clone());
+            println!(
+                "{:?} {:?} {:?} {:?} {:?}",
+                command.clone(),
+                bytekey.len(),
+                byteval.len(),
+                bytekey.clone(),
+                byteval.clone()
+            );
 
             let _ = stream.write(&command);
             let _ = stream.write(&[bytekey.len() as u8]);
@@ -66,8 +75,9 @@ fn main() {
         }
 
         Commands::get { key } => {
-
-            let command = Commands::get { key: key.to_string() };
+            let command = Commands::get {
+                key: key.to_string(),
+            };
             let bytes = serde_json::to_vec_pretty(&command).unwrap();
 
             match stream.write_all(&bytes) {
@@ -79,8 +89,9 @@ fn main() {
         }
 
         Commands::rm { key } => {
-
-            let command = Commands::rm { key: key.to_string() };
+            let command = Commands::rm {
+                key: key.to_string(),
+            };
             let bytes = serde_json::to_vec_pretty(&command).unwrap();
 
             match stream.write_all(&bytes) {
@@ -89,7 +100,5 @@ fn main() {
             }
             // todo!()
         }
-
-
     }
 }

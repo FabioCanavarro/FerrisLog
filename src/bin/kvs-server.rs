@@ -1,15 +1,14 @@
-use bincode::{borrow_decode_from_slice, config::{self, Config}, decode_from_slice};
+use bincode::{config, decode_from_slice};
 use clap::Parser;
 use ferris::kvstore::command;
-use serde::de::value;
 use slog::{info, o, warn, Drain, Logger};
 use slog_term::PlainSyncDecorator;
-use time::format_description::well_known::iso8601::Config;
 use std::{
     error::Error,
     fmt::Display,
     io::{stdout, Read, Write},
-    net::{TcpListener, TcpStream}, usize,
+    net::{TcpListener, TcpStream},
+    usize,
 };
 
 #[derive(Clone, Copy)]
@@ -45,23 +44,44 @@ impl From<Engine> for String {
 struct Header {
     command: u8,
     keysize: u8,
-    valuesize: u8
+    valuesize: u8,
 }
 
-impl Header{
-    fn new(command: u8,keysize: u8,valuesize: u8) -> Header{
-        Header { command, keysize, valuesize }
+#[derive(Debug)]
+struct CliCommand {
+    command: u8,
+    key: String,
+    value: String,
+}
+
+impl CliCommand {
+    fn new(command: u8, key: String, value: String) -> CliCommand {
+        CliCommand {
+            command,
+            key,
+            value,
+        }
     }
 }
 
-fn handle_listener(stream: &mut TcpStream) -> Result<Vec<u8>, ServerError> {
-    let mut buf: [u8;3] = [0,0,0];
+impl Header {
+    fn new(command: u8, keysize: u8, valuesize: u8) -> Header {
+        Header {
+            command,
+            keysize,
+            valuesize,
+        }
+    }
+}
+
+fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
+    let mut buf: [u8; 3] = [0, 0, 0];
 
     let _ = stream.flush();
 
-    match stream.read_exact(&mut buf){
+    match stream.read_exact(&mut buf) {
         Ok(_) => (),
-        Err(e) => ()
+        Err(e) => (),
     }
 
     let header = Header::new(buf[0], buf[1], buf[2]);
@@ -69,18 +89,18 @@ fn handle_listener(stream: &mut TcpStream) -> Result<Vec<u8>, ServerError> {
 
     match stream.read_to_end(&mut buf) {
         Ok(_) => (),
-        Err(_) => ()
+        Err(e) => (),
     }
 
-    let keybyte = &buf[..{header.keysize as usize  - 1}];
-    let valuebyte = &buf[{header.keysize as usize -1}..{header.valuesize as usize -1}];
-
+    let keybyte = &buf[..{ header.keysize as usize }];
+    let valuebyte =
+        &buf[{ header.keysize as usize }..{ header.keysize as usize + header.valuesize as usize }];
     let key: String = decode_from_slice(keybyte, config::standard()).unwrap().0;
     let value: String = decode_from_slice(valuebyte, config::standard()).unwrap().0;
 
-    println!("{} {} {}",header.command,key,value);
+    let command = CliCommand::new(header.command, key, value);
 
-    Ok(buf.to_vec())
+    Ok(command)
 }
 
 #[derive(Parser, Debug)]
