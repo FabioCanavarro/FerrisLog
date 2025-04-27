@@ -20,12 +20,16 @@ enum Engine {
 #[derive(Debug)]
 enum ServerError {
     UnableToReadFromStream,
+    FailedToReadStream {e:Box<dyn Error>},
+    UnableToDecodeBytes {e:Box<dyn Error>}
 }
 
 impl Display for ServerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ServerError::UnableToReadFromStream => writeln!(f, "Unable to read from stream"),
+            Self::UnableToReadFromStream => writeln!(f, "Unable to read from stream"),
+            Self::FailedToReadStream { e } => writeln!(f,"Failed to read from stream, Error: {}", e),
+            Self::UnableToDecodeBytes { e } => writeln!(f,"UnableToDecodeBytes, Error: {}", e)
         }
     }
 }
@@ -81,7 +85,7 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
 
     match stream.read_exact(&mut buf) {
         Ok(_) => (),
-        Err(e) => (),
+        Err(e) => return Err(ServerError::FailedToReadStream { e: Box::new(e) })
     }
 
     let header = Header::new(buf[0], buf[1], buf[2]);
@@ -89,14 +93,24 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
 
     match stream.read_to_end(&mut buf) {
         Ok(_) => (),
-        Err(e) => (),
+        Err(e) => return Err(ServerError::FailedToReadStream { e: Box::new(e) })
     }
 
     let keybyte = &buf[..{ header.keysize as usize }];
-    let valuebyte =
-        &buf[{ header.keysize as usize }..{ header.keysize as usize + header.valuesize as usize }];
-    let key: String = decode_from_slice(keybyte, config::standard()).unwrap().0;
-    let value: String = decode_from_slice(valuebyte, config::standard()).unwrap().0;
+
+    let valuebyte = &buf[{ header.keysize as usize }..{ header.keysize as usize + header.valuesize as usize }];
+
+    let key: String = 
+        match decode_from_slice(keybyte, config::standard()) {
+            Ok(k) => k.0,
+            Err(e) => return Err(ServerError::UnableToDecodeBytes { e: Box::new(e) })
+        };
+
+    let value: String = 
+        match decode_from_slice(valuebyte, config::standard()) {
+            Ok(k) => k.0,
+            Err(e) => return Err(ServerError::UnableToDecodeBytes { e: Box::new(e) })
+        };
 
     let command = CliCommand::new(header.command, key, value);
 
@@ -130,10 +144,20 @@ fn main() {
         "started_at" => format!("{}", args.address)
     );
 
-    let listener = TcpListener::bind(args.address).unwrap();
+    let listener =
+        match TcpListener::bind(args.address) {
+            Ok(l) => l, 
+            Err(e) => {
+                    info!(logger,
+                        "Application Warning";
+                        "Error:"  => format!("{}",e)
+                    );
+                    panic!()
+            }
+        };
 
     for stream in listener.incoming() {
-        let command = handle_listener(&mut stream.expect("Error"));
+        let command = handle_listener(&mut stream.unwrap());
 
         match command {
             Ok(log) => info!(logger,
@@ -142,7 +166,7 @@ fn main() {
             ),
 
             Err(e) => warn!(logger,
-                        "StreamError";
+                        "Application Warning";
                         "Error:" => format!("{}",e)
             ),
         }
