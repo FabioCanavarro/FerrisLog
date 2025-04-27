@@ -1,4 +1,4 @@
-# Ferrislog
+# Ferrislog-ServerClient
 
 [![Rust](https://img.shields.io/badge/Rust-1.72%2B-orange)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
@@ -92,7 +92,5 @@ Ferrislog uses a log-structured storage model:
 ## Future Enhancements
 
 - Multi-threaded operations for better performance
-
-- Client-server architecture with network support
 
 - Time-to-live (TTL) for keys
