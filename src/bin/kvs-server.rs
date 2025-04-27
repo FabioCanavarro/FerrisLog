@@ -66,20 +66,15 @@ fn handle_listener(stream: &mut TcpStream) -> Result<Vec<u8>, ServerError> {
 
     match stream.read_to_end(&mut buf) {
         Ok(_) => (),
-        Err(_) => ()
+        Err(e) => ()
     }
 
     let keybyte = &buf[..{header.keysize as usize}];
-    let valuebyte = &buf[{header.keysize as usize-1}..{header.keysize as usize + header.valuesize as usize}];
-
+    let valuebyte = &buf[{header.keysize as usize}..{header.keysize as usize + header.valuesize as usize}];
     let key: String = decode_from_slice(keybyte, config::standard()).unwrap().0;
     let value: String = decode_from_slice(valuebyte, config::standard()).unwrap().0;
     
-    let buf: [u8;10] = (1..6).collect::<Vec<i32>>().try_into().unwrap();
-    println!("{:?}",buf);
-
-    println!("{:?}    {:?}    {:?}",&buf[..2],&buf[1..],&buf[1..2]);
-    println!("{} {} {}",header.command,key,value);
+    let msg = format!("{} {} {}",header.command,key,value);
 
     Ok(vec![0_u8])
 }
