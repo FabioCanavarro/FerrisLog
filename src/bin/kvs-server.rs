@@ -1,12 +1,15 @@
+use bincode::{borrow_decode_from_slice, config::{self, Config}, decode_from_slice};
 use clap::Parser;
 use ferris::kvstore::command;
+use serde::de::value;
 use slog::{info, o, warn, Drain, Logger};
 use slog_term::PlainSyncDecorator;
+use time::format_description::well_known::iso8601::Config;
 use std::{
     error::Error,
     fmt::Display,
     io::{stdout, Read, Write},
-    net::{TcpListener, TcpStream},
+    net::{TcpListener, TcpStream}, usize,
 };
 
 #[derive(Clone, Copy)]
@@ -62,7 +65,21 @@ fn handle_listener(stream: &mut TcpStream) -> Result<Vec<u8>, ServerError> {
     }
 
     let header = Header::new(buf[0], buf[1], buf[2]);
-    let key: &[u8] = &[];
+    let mut buf: Vec<u8> = Vec::new();
+
+    match stream.read_to_end(&mut buf) {
+        Ok(_) => (),
+        Err(_) => ()
+    }
+
+    let keybyte = &buf[..{header.keysize as usize  - 1}];
+    let valuebyte = &buf[{header.keysize as usize -1}..{header.valuesize as usize -1}];
+
+    let key: String = decode_from_slice(keybyte, config::standard()).unwrap().0;
+    let value: String = decode_from_slice(valuebyte, config::standard()).unwrap().0;
+
+    println!("{} {} {}",header.command,key,value);
+
     Ok(buf.to_vec())
 }
 
