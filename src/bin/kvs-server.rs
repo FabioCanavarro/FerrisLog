@@ -144,10 +144,20 @@ fn main() {
         "started_at" => format!("{}", args.address)
     );
 
-    let listener = TcpListener::bind(args.address).unwrap();
+    let listener =
+        match TcpListener::bind(args.address) {
+            Ok(l) => l, 
+            Err(e) => {
+                    info!(logger,
+                        "Application Warning";
+                        "Error:"  => format!("{}",e)
+                    );
+                    panic!()
+            }
+        };
 
     for stream in listener.incoming() {
-        let command = handle_listener(&mut stream.expect("Error"));
+        let command = handle_listener(&mut stream.unwrap());
 
         match command {
             Ok(log) => info!(logger,
@@ -156,7 +166,7 @@ fn main() {
             ),
 
             Err(e) => warn!(logger,
-                        "StreamError";
+                        "Application Warning";
                         "Error:" => format!("{}",e)
             ),
         }
