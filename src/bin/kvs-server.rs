@@ -1,12 +1,10 @@
 use bincode::{config, decode_from_slice};
 use clap::Parser;
+use ferris::kvstore::command;
 use slog::{info, o, warn, Drain, Logger};
 use slog_term::PlainSyncDecorator;
 use std::{
-    error::Error,
-    fmt::Display,
-    io::{stdout, Read, Write},
-    net::{TcpListener, TcpStream}, usize,
+    error::Error, fmt::Display, io::{stdout, Read, Write}, net::{TcpListener, TcpStream}, usize
 };
 
 #[derive(Clone, Copy)]
@@ -45,13 +43,26 @@ struct Header {
     valuesize: u8
 }
 
+#[derive(Debug)]
+struct CliCommand {
+    command: u8,
+    key: String,
+    value: String
+}
+
+impl CliCommand {
+    fn new (command: u8, key: String, value: String) -> CliCommand {
+        CliCommand { command, key, value }
+    }
+}
+
 impl Header{
     fn new(command: u8,keysize: u8,valuesize: u8) -> Header{
         Header { command, keysize, valuesize }
     }
 }
 
-fn handle_listener(stream: &mut TcpStream) -> Result<Vec<u8>, ServerError> {
+fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
     let mut buf: [u8;3] = [0,0,0];
 
     let _ = stream.flush();
@@ -74,9 +85,9 @@ fn handle_listener(stream: &mut TcpStream) -> Result<Vec<u8>, ServerError> {
     let key: String = decode_from_slice(keybyte, config::standard()).unwrap().0;
     let value: String = decode_from_slice(valuebyte, config::standard()).unwrap().0;
     
-    let msg = format!("{} {} {}",header.command,key,value);
+    let command = CliCommand::new(header.command, key, value);
 
-    Ok(vec![0_u8])
+    Ok(command)
 }
 
 #[derive(Parser, Debug)]
