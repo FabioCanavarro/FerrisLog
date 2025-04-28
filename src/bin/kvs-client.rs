@@ -53,7 +53,7 @@ fn main() {
             let byteval = encode_to_vec(key, config).unwrap();
 
             println!(
-                "{:?} {:?} {:?} {:?} {:?}",
+                "Data sent: {:?} {:?} {:?} {:?} {:?}",
                 command.clone(),
                 bytekey.len(),
                 byteval.len(),
@@ -74,7 +74,7 @@ fn main() {
             let bytekey = encode_to_vec(key, config).unwrap();
 
             println!(
-                "{:?} {:?} {:?} {:?}",
+                "Data sent: {:?} {:?} {:?} {:?}",
                 command.clone(),
                 bytekey.len(),
                 [0_u8],
@@ -94,7 +94,7 @@ fn main() {
             let bytekey = encode_to_vec(key, config).unwrap();
 
             println!(
-                "{:?} {:?} {:?} {:?}",
+                "Data sent: {:?} {:?} {:?} {:?}",
                 command.clone(),
                 bytekey.len(),
                 [0_u8],
