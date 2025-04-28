@@ -91,7 +91,21 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
         Err(e) => (),
     }
 
+    let valuebyte = &buf[{ header.keysize as usize }..{ header.keysize as usize + header.valuesize as usize }];
+
+    let key: String = 
+        match decode_from_slice(keybyte, config::standard()) {
+            Ok(k) => k.0,
+            Err(e) => return Err(ServerError::UnableToDecodeBytes { e: Box::new(e) })
+        };
+
+    let value: String = 
+        match decode_from_slice(valuebyte, config::standard()) {
+            Ok(k) => k.0,
+            Err(e) => return Err(ServerError::UnableToDecodeBytes { e: Box::new(e) })
+        };
     let keybyte = &buf[..{ header.keysize as usize }];
+
     let valuebyte =
         &buf[{ header.keysize as usize }..{ header.keysize as usize + header.valuesize as usize }];
 
