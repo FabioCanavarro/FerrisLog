@@ -51,11 +51,11 @@ struct Header {
 struct CliCommand {
     command: u8,
     key: String,
-    value: String,
+    value: Option<String>,
 }
 
 impl CliCommand {
-    fn new(command: u8, key: String, value: String) -> CliCommand {
+    fn new(command: u8, key: String, value: Option<String>) -> CliCommand {
         CliCommand {
             command,
             key,
@@ -95,10 +95,16 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
     let keybyte = &buf[..{ header.keysize as usize }];
     let valuebyte =
         &buf[{ header.keysize as usize }..{ header.keysize as usize + header.valuesize as usize }];
-    let key: String = decode_from_slice(keybyte, config::standard()).unwrap().0;
-    let value: String = decode_from_slice(valuebyte, config::standard()).unwrap().0;
 
-    let command = CliCommand::new(header.command, key, value);
+    let key: String = decode_from_slice(keybyte, config::standard()).unwrap().0;
+    let value = decode_from_slice(valuebyte, config::standard());
+
+    let val = match value {
+        Ok(val) => Some(val.0),
+        Err(_) => None
+    };
+
+    let command = CliCommand::new(header.command, key, val);
 
     Ok(command)
 }
