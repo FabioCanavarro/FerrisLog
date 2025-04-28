@@ -74,45 +74,43 @@ fn main() {
         Commands::get { key } => {
             let command = [1_u8];
 
-            let bytekey = encode_to_vec(val, config).unwrap();
-            let byteval = encode_to_vec(key, config).unwrap();
+            let bytekey = encode_to_vec(key, config).unwrap();
 
             println!(
                 "{:?} {:?} {:?} {:?} {:?}",
                 command.clone(),
                 bytekey.len(),
-                byteval.len(),
+                [0_u8],
                 bytekey.clone(),
-                byteval.clone()
+                []
             );
 
             let _ = stream.write(&command);
             let _ = stream.write(&[bytekey.len() as u8]);
-            let _ = stream.write(&[byteval.len() as u8]);
+            let _ = stream.write(&[0_u8]);
             let _ = stream.write(&bytekey[..]);
-            let _ = stream.write(&byteval[..]);
+            let _ = stream.write(&[]);
         }
 
         Commands::rm { key } => {
             let command = [2_u8];
 
-            let bytekey = encode_to_vec(val, config).unwrap();
-            let byteval = encode_to_vec(key, config).unwrap();
+            let bytekey = encode_to_vec(key, config).unwrap();
 
             println!(
                 "{:?} {:?} {:?} {:?} {:?}",
                 command.clone(),
                 bytekey.len(),
-                byteval.len(),
+                [0_u8],
                 bytekey.clone(),
-                byteval.clone()
+                []
             );
 
             let _ = stream.write(&command);
             let _ = stream.write(&[bytekey.len() as u8]);
-            let _ = stream.write(&[byteval.len() as u8]);
+            let _ = stream.write(&[0_u8]);
             let _ = stream.write(&bytekey[..]);
-            let _ = stream.write(&byteval[..]);        
+            let _ = stream.write(&[]);
         }
     }
 }
