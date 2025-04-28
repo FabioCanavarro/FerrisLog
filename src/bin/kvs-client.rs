@@ -72,30 +72,47 @@ fn main() {
         }
 
         Commands::get { key } => {
-            let command = Commands::get {
-                key: key.to_string(),
-            };
-            let bytes = serde_json::to_vec_pretty(&command).unwrap();
+            let command = [1_u8];
 
-            match stream.write_all(&bytes) {
-                Ok(_) => (),
-                Err(e) => panic!("{}", e),
-            }
+            let bytekey = encode_to_vec(val, config).unwrap();
+            let byteval = encode_to_vec(key, config).unwrap();
 
-            // todo!()
+            println!(
+                "{:?} {:?} {:?} {:?} {:?}",
+                command.clone(),
+                bytekey.len(),
+                byteval.len(),
+                bytekey.clone(),
+                byteval.clone()
+            );
+
+            let _ = stream.write(&command);
+            let _ = stream.write(&[bytekey.len() as u8]);
+            let _ = stream.write(&[byteval.len() as u8]);
+            let _ = stream.write(&bytekey[..]);
+            let _ = stream.write(&byteval[..]);
         }
 
         Commands::rm { key } => {
-            let command = Commands::rm {
-                key: key.to_string(),
-            };
-            let bytes = serde_json::to_vec_pretty(&command).unwrap();
+            let command = [2_u8];
 
-            match stream.write_all(&bytes) {
-                Ok(_) => (),
-                Err(e) => panic!("{}", e),
-            }
-            // todo!()
+            let bytekey = encode_to_vec(val, config).unwrap();
+            let byteval = encode_to_vec(key, config).unwrap();
+
+            println!(
+                "{:?} {:?} {:?} {:?} {:?}",
+                command.clone(),
+                bytekey.len(),
+                byteval.len(),
+                bytekey.clone(),
+                byteval.clone()
+            );
+
+            let _ = stream.write(&command);
+            let _ = stream.write(&[bytekey.len() as u8]);
+            let _ = stream.write(&[byteval.len() as u8]);
+            let _ = stream.write(&bytekey[..]);
+            let _ = stream.write(&byteval[..]);        
         }
     }
 }
