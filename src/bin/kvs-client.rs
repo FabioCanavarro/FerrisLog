@@ -1,10 +1,7 @@
 use bincode::{config, encode_to_vec};
 use clap::{Parser, Subcommand};
 use serde::Serialize;
-use std::{
-    io::Write,
-    net::TcpStream,
-};
+use std::{io::Write, net::TcpStream};
 
 // Cli Parser
 #[derive(Parser)]

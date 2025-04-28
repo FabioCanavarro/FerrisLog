@@ -10,7 +10,6 @@ use std::{
     usize,
 };
 
-
 #[derive(Clone, Copy)]
 enum Engine {
     Kvs,
@@ -101,7 +100,7 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
 
     let val = match value {
         Ok(val) => Some(val.0),
-        Err(_) => None
+        Err(_) => None,
     };
 
     let command = CliCommand::new(header.command, key, val);
