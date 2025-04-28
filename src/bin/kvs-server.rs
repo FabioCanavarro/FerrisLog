@@ -55,11 +55,11 @@ struct Header {
 struct CliCommand {
     command: u8,
     key: String,
-    value: String,
+    value: Option<String>,
 }
 
 impl CliCommand {
-    fn new(command: u8, key: String, value: String) -> CliCommand {
+    fn new(command: u8, key: String, value: Option<String>) -> CliCommand {
         CliCommand {
             command,
             key,
@@ -106,13 +106,14 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
             Err(e) => return Err(ServerError::UnableToDecodeBytes { e: Box::new(e) })
         };
 
-    let value: String = 
-        match decode_from_slice(valuebyte, config::standard()) {
-            Ok(k) => k.0,
-            Err(e) => return Err(ServerError::UnableToDecodeBytes { e: Box::new(e) })
-        };
+    let value = decode_from_slice(valuebyte, config::standard());
 
-    let command = CliCommand::new(header.command, key, value);
+    let val = match value {
+        Ok(val) => Some(val.0),
+        Err(_) => None,
+    };
+
+    let command = CliCommand::new(header.command, key, val);
 
     Ok(command)
 }
