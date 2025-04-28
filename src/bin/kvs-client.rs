@@ -77,12 +77,11 @@ fn main() {
             let bytekey = encode_to_vec(key, config).unwrap();
 
             println!(
-                "{:?} {:?} {:?} {:?} {:?}",
+                "{:?} {:?} {:?} {:?}",
                 command.clone(),
                 bytekey.len(),
                 [0_u8],
                 bytekey.clone(),
-                []
             );
 
             let _ = stream.write(&command);
@@ -98,12 +97,11 @@ fn main() {
             let bytekey = encode_to_vec(key, config).unwrap();
 
             println!(
-                "{:?} {:?} {:?} {:?} {:?}",
+                "{:?} {:?} {:?} {:?}",
                 command.clone(),
                 bytekey.len(),
                 [0_u8],
                 bytekey.clone(),
-                []
             );
 
             let _ = stream.write(&command);
