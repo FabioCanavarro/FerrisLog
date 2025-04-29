@@ -1,5 +1,6 @@
 use bincode::{config, decode_from_slice};
 use clap::Parser;
+use ferris::kvstore::KvStore;
 use slog::{info, o, warn, Drain, Logger};
 use slog_term::PlainSyncDecorator;
 use std::{
@@ -21,7 +22,8 @@ enum Engine {
 enum ServerError {
     UnableToReadFromStream,
     FailedToReadStream {e:Box<dyn Error>},
-    UnableToDecodeBytes {e:Box<dyn Error>}
+    UnableToDecodeBytes {e:Box<dyn Error>},
+    CommandNotFound
 }
 
 impl Display for ServerError {
@@ -29,7 +31,8 @@ impl Display for ServerError {
         match self {
             Self::UnableToReadFromStream => writeln!(f, "Unable to read from stream"),
             Self::FailedToReadStream { e } => writeln!(f,"Failed to read from stream, Error: {}", e),
-            Self::UnableToDecodeBytes { e } => writeln!(f,"UnableToDecodeBytes, Error: {}", e)
+            Self::UnableToDecodeBytes { e } => writeln!(f,"UnableToDecodeBytes, Error: {}", e),
+            ServerError::CommandNotFound => writeln!(f,"Command is not found"),
         }
     }
 }
@@ -116,6 +119,27 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
     let command = CliCommand::new(header.command, key, val);
 
     Ok(command)
+}
+
+fn execute_command(mut kvstore: KvStore, parsed: CliCommand) -> Result<(), Box<dyn Error + 'static>>{
+    let command = parsed.command;
+    let key = parsed.key;
+    let val = parsed.value;
+    match command {
+        0 => {
+            let res = kvstore.set(key, val.unwrap());
+        },
+        1 => {
+            let res = kvstore.get(key);
+        },
+        2 => {
+            let res = kvstore.remove(key);
+        },
+        _ => {
+            return Box::new(Err(ServerError::CommandNotFound));
+        }
+    }
+    Ok(())
 }
 
 #[derive(Parser, Debug)]
