@@ -1,7 +1,7 @@
 use bincode::{config, encode_to_vec};
 use clap::{Parser, Subcommand};
 use serde::Serialize;
-use std::{io::Write, net::TcpStream};
+use std::{io::{Read, Write}, net::TcpStream};
 
 // Cli Parser
 #[derive(Parser)]
@@ -91,6 +91,11 @@ fn main() {
             let _ = stream.write(&[0_u8]);
             let _ = stream.write(&bytekey[..]);
             let _ = stream.write(&[]);
+
+            let _ = stream.flush();
+            let mut val = String::new();
+            let _ = stream.read_to_string(&mut val);
+            println!("Data received: {:?}",val);
         }
 
         Commands::rm { key } => {

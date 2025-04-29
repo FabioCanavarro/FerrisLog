@@ -1,4 +1,4 @@
-use bincode::{config, decode_from_slice};
+use bincode::{config, decode_from_slice, encode_to_vec};
 use clap::Parser;
 use ferris::kvstore::{error::KvError, KvStore};
 use slog::{info, o, warn, Drain, Logger};
@@ -20,7 +20,7 @@ enum ServerError {
     FailedToReadStream {e:Box<dyn Error>},
     UnableToDecodeBytes {e:Box<dyn Error>},
     CommandNotFound,
-
+    GetFoundNone,
 }
 
 impl Display for ServerError {
@@ -29,7 +29,8 @@ impl Display for ServerError {
             Self::UnableToReadFromStream => writeln!(f, "Unable to read from stream"),
             Self::FailedToReadStream { e } => writeln!(f,"Failed to read from stream, Error: {}", e),
             Self::UnableToDecodeBytes { e } => writeln!(f,"UnableToDecodeBytes, Error: {}", e),
-            ServerError::CommandNotFound => writeln!(f,"Command is not found"),
+            Self::CommandNotFound => writeln!(f,"Command is not found"),
+            Self::GetFoundNone => writeln!(f,"Found None"),
         }
     }
 }
@@ -118,26 +119,46 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
     Ok(command)
 }
 
-fn execute_command(stream: &mut TcpStream,kvstore: &mut KvStore, parsed: CliCommand) -> Result<(), Box<dyn Error>>{
+fn execute_command(logger: Logger, stream: &mut TcpStream, kvstore: &mut KvStore, parsed: CliCommand) -> Result<(), Box<dyn Error>>{
     let command = parsed.command;
     let key = parsed.key;
     let val = parsed.value;
     match command {
         0 => {
             let res = kvstore.set(key, val.unwrap());
+
+            info!(logger, "Application Info"; "Info" => "Set command succesfully ran");
             if let Err(e) = res {return Err(Box::new(e));}
         },
         1 => {
-            let res = kvstore.get(key);
-            match res{
-                Ok(l) => {
-                    todo!()
+            let res = kvstore.get(key).unwrap();
+            info!(logger, "Application Info"; "Info" => "{res}");
+            match res {
+                Some(l) => {
+
+                    info!(logger, "Application Info"; "Info" => "TEST");
+                    let byte = encode_to_vec(l, config::standard()).unwrap();
+
+                    info!(logger, "Application Info"; "Info" => "TEST");
+                    let _ = stream.write(&byte[..]);
+
+                    info!(logger, "Application Info"; "Info" => "TEST");
+                    let _ = stream.flush();
+                    info!(logger, "Application Info"; "Info" => "Get command succesfully ran");
                 },
-                Err(e) => return Err(Box::new(e))
+                None => {
+
+                    info!(logger, "Application Info"; "Info" => "Error");
+                    let byte = encode_to_vec("Cant Get any key from the table", config::standard()).unwrap();
+                    let _ = stream.write(&byte[..]);
+                    let _ = stream.flush();
+                    return Err(Box::new(ServerError::GetFoundNone));
+                }
             }
         },
         2 => {
             let res = kvstore.remove(key);
+            info!(logger, "Application Info"; "Info" => "Remove command succesfully ran");
             if let Err(e) = res {return Err(Box::new(e));}
         },
         _ => {
@@ -196,7 +217,7 @@ fn main() {
                         "Incoming Message";
                         "Command" =>  format!("{:?}",log)
                     );
-                    let res = execute_command(&mut stream, &mut store, log);
+                    let res = execute_command(logger.clone(),&mut stream, &mut store, log);
                     match res{
                         Ok(_) => (),
                         Err(e) => {
