@@ -121,7 +121,7 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
     Ok(command)
 }
 
-fn execute_command(mut kvstore: KvStore, parsed: CliCommand) -> Result<(), Box<dyn Error + 'static>>{
+fn execute_command(mut kvstore: KvStore, parsed: CliCommand) -> Result<(), ServerError>{
     let command = parsed.command;
     let key = parsed.key;
     let val = parsed.value;
@@ -136,7 +136,7 @@ fn execute_command(mut kvstore: KvStore, parsed: CliCommand) -> Result<(), Box<d
             let res = kvstore.remove(key);
         },
         _ => {
-            return Box::new(Err(ServerError::CommandNotFound));
+            return Err(ServerError::CommandNotFound);
         }
     }
     Ok(())
