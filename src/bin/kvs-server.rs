@@ -4,11 +4,7 @@ use ferris::kvstore::{error::KvError, KvStore};
 use slog::{info, o, warn, Drain, Logger};
 use slog_term::PlainSyncDecorator;
 use std::{
-    error::Error,
-    fmt::Display,
-    io::{stdout, Read, Write},
-    net::{TcpListener, TcpStream},
-    usize,
+    env::current_dir, error::Error, fmt::Display, io::{stdout, Read, Write}, net::{TcpListener, TcpStream}, usize
 };
 
 
@@ -122,7 +118,7 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
     Ok(command)
 }
 
-fn execute_command(mut kvstore: KvStore, parsed: CliCommand) -> Result<(), Box<dyn Error>>{
+fn execute_command(kvstore: &mut KvStore, parsed: CliCommand) -> Result<(), Box<dyn Error>>{
     let command = parsed.command;
     let key = parsed.key;
     let val = parsed.value;
@@ -166,6 +162,7 @@ fn main() {
     );
 
     let args = Args::parse();
+    let mut store = KvStore::open(current_dir().unwrap().as_path()).unwrap();
 
     // Initial logging
     info!(logger,
@@ -187,22 +184,31 @@ fn main() {
 
     for stream in listener.incoming() {
         let command = handle_listener(&mut stream.unwrap());
-
-        let log = match command {
+        match command {
             Ok(log) => {
-                info!(logger,
+                    info!(logger,
                         "Incoming Message";
                         "Command" =>  format!("{:?}",log)
-                );
-            
-                        },
+                    );
+                    let res = execute_command(&mut store, log);
+                    match res{
+                        Ok(_) => (),
+                        Err(e) => {
+                            warn!(logger,
+                                "Application Warning";
+                                "Error:" => format!("{}",e)
+                            );
+                        }
+                    }
+                },
 
-            Err(e) => warn!(logger,
+            Err(e) => {
+                    warn!(logger,
                         "Application Warning";
                         "Error:" => format!("{}",e)
-            ),
-        };
-
-        
+                    );
+                }
+        }
+    
     }
 }

@@ -45,6 +45,11 @@ fn main() {
         }
     };
 
+    if cli.command.is_none() {
+        Cli::parse_from(["kvs", "--help"]);
+        return;
+    }
+
     match cli.command.unwrap() {
         Commands::set { key, val } => {
             let command = [0_u8];
