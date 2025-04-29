@@ -118,7 +118,7 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
     Ok(command)
 }
 
-fn execute_command(kvstore: &mut KvStore, parsed: CliCommand) -> Result<(), Box<dyn Error>>{
+fn execute_command(stream: &mut TcpStream,kvstore: &mut KvStore, parsed: CliCommand) -> Result<(), Box<dyn Error>>{
     let command = parsed.command;
     let key = parsed.key;
     let val = parsed.value;
@@ -129,7 +129,12 @@ fn execute_command(kvstore: &mut KvStore, parsed: CliCommand) -> Result<(), Box<
         },
         1 => {
             let res = kvstore.get(key);
-            if let Err(e) = res {return Err(Box::new(e));}
+            match res{
+                Ok(l) => {
+                    todo!()
+                },
+                Err(e) => return Err(Box::new(e))
+            }
         },
         2 => {
             let res = kvstore.remove(key);
@@ -182,15 +187,16 @@ fn main() {
             }
         };
 
-    for stream in listener.incoming() {
-        let command = handle_listener(&mut stream.unwrap());
+    for stream_wrapped in listener.incoming() {
+        let mut stream = stream_wrapped.unwrap();
+        let command = handle_listener(&mut stream);
         match command {
             Ok(log) => {
                     info!(logger,
                         "Incoming Message";
                         "Command" =>  format!("{:?}",log)
                     );
-                    let res = execute_command(&mut store, log);
+                    let res = execute_command(&mut stream, &mut store, log);
                     match res{
                         Ok(_) => (),
                         Err(e) => {
