@@ -1,6 +1,6 @@
 use bincode::{config, decode_from_slice};
 use clap::Parser;
-use ferris::kvstore::KvStore;
+use ferris::kvstore::{error::KvError, KvStore};
 use slog::{info, o, warn, Drain, Logger};
 use slog_term::PlainSyncDecorator;
 use std::{
@@ -23,7 +23,8 @@ enum ServerError {
     UnableToReadFromStream,
     FailedToReadStream {e:Box<dyn Error>},
     UnableToDecodeBytes {e:Box<dyn Error>},
-    CommandNotFound
+    CommandNotFound,
+
 }
 
 impl Display for ServerError {
@@ -121,22 +122,25 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
     Ok(command)
 }
 
-fn execute_command(mut kvstore: KvStore, parsed: CliCommand) -> Result<(), ServerError>{
+fn execute_command(mut kvstore: KvStore, parsed: CliCommand) -> Result<(), Box<dyn Error>>{
     let command = parsed.command;
     let key = parsed.key;
     let val = parsed.value;
     match command {
         0 => {
             let res = kvstore.set(key, val.unwrap());
+            if let Err(e) = res {return Err(Box::new(e));}
         },
         1 => {
             let res = kvstore.get(key);
+            if let Err(e) = res {return Err(Box::new(e));}
         },
         2 => {
             let res = kvstore.remove(key);
+            if let Err(e) = res {return Err(Box::new(e));}
         },
         _ => {
-            return Err(ServerError::CommandNotFound);
+            return Err(Box::new(ServerError::CommandNotFound));
         }
     }
     Ok(())
@@ -184,16 +188,21 @@ fn main() {
     for stream in listener.incoming() {
         let command = handle_listener(&mut stream.unwrap());
 
-        match command {
-            Ok(log) => info!(logger,
+        let log = match command {
+            Ok(log) => {
+                info!(logger,
                         "Incoming Message";
                         "Command" =>  format!("{:?}",log)
-            ),
+                );
+            
+                        },
 
             Err(e) => warn!(logger,
                         "Application Warning";
                         "Error:" => format!("{}",e)
             ),
-        }
+        };
+
+        
     }
 }
