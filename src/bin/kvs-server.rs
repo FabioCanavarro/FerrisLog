@@ -131,24 +131,22 @@ fn execute_command(logger: Logger, stream: &mut TcpStream, kvstore: &mut KvStore
             if let Err(e) = res {return Err(Box::new(e));}
         },
         1 => {
+
             let res = kvstore.get(key).unwrap();
-            info!(logger, "Application Info"; "Info" => "{res}");
             match res {
                 Some(l) => {
-
-                    info!(logger, "Application Info"; "Info" => "TEST");
+    
+                    info!(logger, "Application Info"; "Info" => format!("Found {}",&l));
                     let byte = encode_to_vec(l, config::standard()).unwrap();
 
-                    info!(logger, "Application Info"; "Info" => "TEST");
                     let _ = stream.write(&byte[..]);
 
-                    info!(logger, "Application Info"; "Info" => "TEST");
                     let _ = stream.flush();
+
                     info!(logger, "Application Info"; "Info" => "Get command succesfully ran");
                 },
                 None => {
 
-                    info!(logger, "Application Info"; "Info" => "Error");
                     let byte = encode_to_vec("Cant Get any key from the table", config::standard()).unwrap();
                     let _ = stream.write(&byte[..]);
                     let _ = stream.flush();

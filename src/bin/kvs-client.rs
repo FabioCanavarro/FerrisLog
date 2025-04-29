@@ -92,9 +92,8 @@ fn main() {
             let _ = stream.write(&bytekey[..]);
             let _ = stream.write(&[]);
 
-            let _ = stream.flush();
-            let mut val = String::new();
-            let _ = stream.read_to_string(&mut val);
+            let mut val: Vec<u8> = Vec::new();
+            let _ = stream.read_to_end(&mut val);
             println!("Data received: {:?}",val);
         }
 
