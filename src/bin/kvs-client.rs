@@ -38,7 +38,7 @@ fn main() {
         return;
     }
 
-    let mut stream = match TcpStream::connect(cli.address) {
+    let mut stream = match TcpStream::connect(&cli.address) {
         Ok(stream) => stream,
         Err(e) => {
             panic!("{}", e);
@@ -91,10 +91,6 @@ fn main() {
             let _ = stream.write(&[0_u8]);
             let _ = stream.write(&bytekey[..]);
             let _ = stream.write(&[]);
-
-            let mut val: Vec<u8> = Vec::new();
-            let _ = stream.read_to_end(&mut val);
-            println!("Data received: {:?}",val);
         }
 
         Commands::rm { key } => {
