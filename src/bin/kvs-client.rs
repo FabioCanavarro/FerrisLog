@@ -57,14 +57,14 @@ fn main() {
             let bytekey = encode_to_vec(val, config).unwrap();
             let byteval = encode_to_vec(key, config).unwrap();
 
-            println!(
+            /* println!(
                 "Data sent: {:?} {:?} {:?} {:?} {:?}",
                 command.clone(),
                 bytekey.len(),
                 byteval.len(),
                 bytekey.clone(),
                 byteval.clone()
-            );
+            ); */
 
             let _ = stream.write(&command);
             let _ = stream.write(&[bytekey.len() as u8]);
@@ -78,13 +78,13 @@ fn main() {
 
             let bytekey = encode_to_vec(key, config).unwrap();
 
-            println!(
+            /* println!(
                 "Data sent: {:?} {:?} {:?} {:?}",
                 command.clone(),
                 bytekey.len(),
                 [0_u8],
                 bytekey.clone(),
-            );
+            ); */
 
             let _ = stream.write(&command);
             let _ = stream.write(&[bytekey.len() as u8]);
@@ -111,13 +111,13 @@ fn main() {
 
             let bytekey = encode_to_vec(key, config).unwrap();
 
-            println!(
+            /* println!(
                 "Data sent: {:?} {:?} {:?} {:?}",
                 command.clone(),
                 bytekey.len(),
                 [0_u8],
                 bytekey.clone(),
-            );
+            ); */
 
             let _ = stream.write(&command);
             let _ = stream.write(&[bytekey.len() as u8]);
