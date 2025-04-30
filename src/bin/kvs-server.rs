@@ -4,7 +4,7 @@ use ferris::kvstore::{error::KvError, KvStore};
 use slog::{info, o, warn, Drain, Logger};
 use slog_term::PlainSyncDecorator;
 use std::{
-    env::current_dir, error::Error, fmt::Display, io::{stdout, Read, Write}, net::{TcpListener, TcpStream}, usize
+    env::current_dir, error::Error, fmt::Display, io::{stdout, Read, Write}, net::{TcpListener, TcpStream}, os::windows::thread, thread::{scope, spawn}, usize
 };
 
 
@@ -136,11 +136,12 @@ fn execute_command(logger: Logger, stream: &mut TcpStream, kvstore: &mut KvStore
             match res {
                 Some(l) => {
                     let byte = encode_to_vec(l, config::standard()).unwrap();
+                    let _ = stream.write(&[byte.len() as u8]).unwrap();
                     let _ = stream.write(&byte[..]).unwrap();
+
                     info!(logger, "Application Info"; "Info" => "Get command succesfully ran");
                 },
                 None => {
-
                     let byte = encode_to_vec("Cant Get any key from the table", config::standard()).unwrap();
                     let _ = stream.write(&byte[..]);
                     return Err(Box::new(ServerError::GetFoundNone));
@@ -157,6 +158,36 @@ fn execute_command(logger: Logger, stream: &mut TcpStream, kvstore: &mut KvStore
         }
     }
     Ok(())
+}
+
+fn handle_connection(mut stream: &mut TcpStream, logger: &Logger, store: &mut KvStore) {
+    let command = handle_listener(&mut stream);
+    match command {
+        Ok(log) => {
+                info!(logger,
+                    "Incoming Message";
+                    "Command" =>  format!("{:?}",log)
+                );
+                let res = execute_command(logger.clone(), stream, store, log);
+                match res{
+                    Ok(_) => (),
+                    Err(e) => {
+                        warn!(logger,
+                            "Application Warning";
+                            "Error:" => format!("{}",e)
+                        );
+                    }
+                }
+            },
+
+        Err(e) => {
+                warn!(logger,
+                    "Application Warning";
+                    "Error:" => format!("{}",e)
+                );
+            }
+    }
+
 }
 
 #[derive(Parser, Debug)]
@@ -180,6 +211,7 @@ fn main() {
 
     let args = Args::parse();
     let mut store = KvStore::open(current_dir().unwrap().as_path()).unwrap();
+    
 
     // Initial logging
     info!(logger,
@@ -198,35 +230,40 @@ fn main() {
                     panic!()
             }
         };
-
+    
     for stream_wrapped in listener.incoming() {
         let mut stream = stream_wrapped.unwrap();
-        let command = handle_listener(&mut stream);
-        match command {
-            Ok(log) => {
-                    info!(logger,
-                        "Incoming Message";
-                        "Command" =>  format!("{:?}",log)
-                    );
-                    let res = execute_command(logger.clone(),&mut stream, &mut store, log);
-                    match res{
-                        Ok(_) => (),
-                        Err(e) => {
-                            warn!(logger,
-                                "Application Warning";
-                                "Error:" => format!("{}",e)
-                            );
-                        }
-                    }
-                },
-
-            Err(e) => {
-                    warn!(logger,
-                        "Application Warning";
-                        "Error:" => format!("{}",e)
-                    );
-                }
-        }
-    
+        scope(|scope|{
+            scope.spawn(|| handle_connection(&mut stream, &logger, &mut store));
+        });
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,4 +1,4 @@
-use bincode::{config, encode_to_vec};
+use bincode::{config, decode_from_slice, encode_to_vec};
 use clap::{Parser, Subcommand};
 use serde::Serialize;
 use std::{io::{Read, Write}, net::TcpStream};
@@ -57,14 +57,14 @@ fn main() {
             let bytekey = encode_to_vec(val, config).unwrap();
             let byteval = encode_to_vec(key, config).unwrap();
 
-            println!(
+            /* println!(
                 "Data sent: {:?} {:?} {:?} {:?} {:?}",
                 command.clone(),
                 bytekey.len(),
                 byteval.len(),
                 bytekey.clone(),
                 byteval.clone()
-            );
+            ); */
 
             let _ = stream.write(&command);
             let _ = stream.write(&[bytekey.len() as u8]);
@@ -78,19 +78,32 @@ fn main() {
 
             let bytekey = encode_to_vec(key, config).unwrap();
 
-            println!(
+            /* println!(
                 "Data sent: {:?} {:?} {:?} {:?}",
                 command.clone(),
                 bytekey.len(),
                 [0_u8],
                 bytekey.clone(),
-            );
+            ); */
 
             let _ = stream.write(&command);
             let _ = stream.write(&[bytekey.len() as u8]);
             let _ = stream.write(&[0_u8]);
             let _ = stream.write(&bytekey[..]);
             let _ = stream.write(&[]);
+
+            let _ = stream.shutdown(std::net::Shutdown::Write);
+
+            let mut size: [u8;1] = [0];
+            stream.read_exact(&mut size).unwrap();
+
+            let mut buf: Vec<u8> = Vec::new();
+            stream.read_to_end(&mut buf).unwrap();
+
+            
+            let byte: String = decode_from_slice(&buf[..], config::standard()).unwrap().0;
+
+            println!("{}",byte)
         }
 
         Commands::rm { key } => {
@@ -98,13 +111,13 @@ fn main() {
 
             let bytekey = encode_to_vec(key, config).unwrap();
 
-            println!(
+            /* println!(
                 "Data sent: {:?} {:?} {:?} {:?}",
                 command.clone(),
                 bytekey.len(),
                 [0_u8],
                 bytekey.clone(),
-            );
+            ); */
 
             let _ = stream.write(&command);
             let _ = stream.write(&[bytekey.len() as u8]);
