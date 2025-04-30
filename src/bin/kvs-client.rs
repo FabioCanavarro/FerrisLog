@@ -103,6 +103,7 @@ fn main() {
             
             let byte: String = decode_from_slice(&buf[..], config::standard()).unwrap().0;
 
+            println!("{}",byte)
         }
 
         Commands::rm { key } => {
