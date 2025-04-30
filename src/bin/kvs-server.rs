@@ -136,11 +136,11 @@ fn execute_command(logger: Logger, stream: &mut TcpStream, kvstore: &mut KvStore
             match res {
                 Some(l) => {
                     let byte = encode_to_vec(l, config::standard()).unwrap();
+                    let _ = stream.write(&[byte.len() as u8]);
                     let _ = stream.write(&byte[..]).unwrap();
                     info!(logger, "Application Info"; "Info" => "Get command succesfully ran");
                 },
                 None => {
-
                     let byte = encode_to_vec("Cant Get any key from the table", config::standard()).unwrap();
                     let _ = stream.write(&byte[..]);
                     return Err(Box::new(ServerError::GetFoundNone));
@@ -157,6 +157,36 @@ fn execute_command(logger: Logger, stream: &mut TcpStream, kvstore: &mut KvStore
         }
     }
     Ok(())
+}
+
+fn handle_connection(mut stream: &mut TcpStream, logger: &Logger, store: &mut KvStore) {
+    let command = handle_listener(&mut stream);
+    match command {
+        Ok(log) => {
+                info!(logger,
+                    "Incoming Message";
+                    "Command" =>  format!("{:?}",log)
+                );
+                let res = execute_command(logger.clone(), &mut stream, store, log);
+                match res{
+                    Ok(_) => (),
+                    Err(e) => {
+                        warn!(logger,
+                            "Application Warning";
+                            "Error:" => format!("{}",e)
+                        );
+                    }
+                }
+            },
+
+        Err(e) => {
+                warn!(logger,
+                    "Application Warning";
+                    "Error:" => format!("{}",e)
+                );
+            }
+    }
+
 }
 
 #[derive(Parser, Debug)]
@@ -201,32 +231,6 @@ fn main() {
 
     for stream_wrapped in listener.incoming() {
         let mut stream = stream_wrapped.unwrap();
-        let command = handle_listener(&mut stream);
-        match command {
-            Ok(log) => {
-                    info!(logger,
-                        "Incoming Message";
-                        "Command" =>  format!("{:?}",log)
-                    );
-                    let res = execute_command(logger.clone(),&mut stream, &mut store, log);
-                    match res{
-                        Ok(_) => (),
-                        Err(e) => {
-                            warn!(logger,
-                                "Application Warning";
-                                "Error:" => format!("{}",e)
-                            );
-                        }
-                    }
-                },
-
-            Err(e) => {
-                    warn!(logger,
-                        "Application Warning";
-                        "Error:" => format!("{}",e)
-                    );
-                }
-        }
-    
+        handle_connection(&mut stream, &logger, &mut store);
     }
 }

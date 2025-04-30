@@ -91,6 +91,14 @@ fn main() {
             let _ = stream.write(&[0_u8]);
             let _ = stream.write(&bytekey[..]);
             let _ = stream.write(&[]);
+            
+            let mut size: [u8;1] = [0];
+            let _ = stream.read_exact(&mut size);
+            let mut buf: Vec<u8> = Vec::new();
+            let _ = stream.read_to_end(&mut buf);
+
+            println!("{:?} {:?}", size, &buf[..]);
+            
         }
 
         Commands::rm { key } => {
