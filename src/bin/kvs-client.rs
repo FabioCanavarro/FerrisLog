@@ -1,4 +1,4 @@
-use bincode::{config, encode_to_vec};
+use bincode::{config, decode_from_slice, encode_to_vec};
 use clap::{Parser, Subcommand};
 use serde::Serialize;
 use std::{io::{Read, Write}, net::TcpStream};
@@ -100,8 +100,9 @@ fn main() {
             let mut buf: Vec<u8> = Vec::new();
             stream.read_to_end(&mut buf).unwrap();
 
-            println!("{:?} {:?}", size, buf);
             
+            let byte: String = decode_from_slice(&buf[..], config::standard()).unwrap().0;
+
         }
 
         Commands::rm { key } => {
