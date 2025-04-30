@@ -138,6 +138,7 @@ fn execute_command(logger: Logger, stream: &mut TcpStream, kvstore: &mut KvStore
                     let byte = encode_to_vec(l, config::standard()).unwrap();
                     let _ = stream.write(&[byte.len() as u8]).unwrap();
                     let _ = stream.write(&byte[..]).unwrap();
+
                     info!(logger, "Application Info"; "Info" => "Get command succesfully ran");
                 },
                 None => {
