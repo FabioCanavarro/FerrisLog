@@ -1,10 +1,10 @@
 use bincode::{config, decode_from_slice, encode_to_vec};
 use clap::Parser;
-use ferris::kvstore::{error::KvError, KvStore};
+use ferris::kvstore::KvStore;
 use slog::{info, o, warn, Drain, Logger};
 use slog_term::PlainSyncDecorator;
 use std::{
-    env::current_dir, error::Error, fmt::Display, io::{stdout, Read, Write}, net::{TcpListener, TcpStream}, os::windows::thread, thread::{scope, spawn}, usize
+    env::current_dir, error::Error, fmt::Display, io::{stdout, Read, Write}, net::{TcpListener, TcpStream}, thread::scope, usize
 };
 
 
