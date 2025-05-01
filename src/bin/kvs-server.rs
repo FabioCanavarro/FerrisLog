@@ -4,9 +4,14 @@ use ferris::kvstore::KvStore;
 use slog::{info, o, warn, Drain, Logger};
 use slog_term::PlainSyncDecorator;
 use std::{
-    env::current_dir, error::Error, fmt::Display, io::{stdout, Read, Write}, net::{TcpListener, TcpStream}, thread::scope, usize
+    env::current_dir,
+    error::Error,
+    fmt::Display,
+    io::{stdout, Read, Write},
+    net::{TcpListener, TcpStream},
+    thread::scope,
+    usize,
 };
-
 
 #[derive(Clone, Copy)]
 enum Engine {
@@ -17,8 +22,8 @@ enum Engine {
 #[derive(Debug)]
 enum ServerError {
     UnableToReadFromStream,
-    FailedToReadStream {e:Box<dyn Error>},
-    UnableToDecodeBytes {e:Box<dyn Error>},
+    FailedToReadStream { e: Box<dyn Error> },
+    UnableToDecodeBytes { e: Box<dyn Error> },
     CommandNotFound,
     GetFoundNone,
 }
@@ -27,10 +32,12 @@ impl Display for ServerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::UnableToReadFromStream => writeln!(f, "Unable to read from stream"),
-            Self::FailedToReadStream { e } => writeln!(f,"Failed to read from stream, Error: {}", e),
-            Self::UnableToDecodeBytes { e } => writeln!(f,"UnableToDecodeBytes, Error: {}", e),
-            Self::CommandNotFound => writeln!(f,"Command is not found"),
-            Self::GetFoundNone => writeln!(f,"Found None"),
+            Self::FailedToReadStream { e } => {
+                writeln!(f, "Failed to read from stream, Error: {}", e)
+            }
+            Self::UnableToDecodeBytes { e } => writeln!(f, "UnableToDecodeBytes, Error: {}", e),
+            Self::CommandNotFound => writeln!(f, "Command is not found"),
+            Self::GetFoundNone => writeln!(f, "Found None"),
         }
     }
 }
@@ -86,7 +93,7 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
 
     match stream.read_exact(&mut buf) {
         Ok(_) => (),
-        Err(e) => return Err(ServerError::FailedToReadStream { e: Box::new(e) })
+        Err(e) => return Err(ServerError::FailedToReadStream { e: Box::new(e) }),
     }
 
     let header = Header::new(buf[0], buf[1], buf[2]);
@@ -94,18 +101,18 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
 
     match stream.read_to_end(&mut buf) {
         Ok(_) => (),
-        Err(e) => return Err(ServerError::FailedToReadStream { e: Box::new(e) })
+        Err(e) => return Err(ServerError::FailedToReadStream { e: Box::new(e) }),
     }
 
     let keybyte = &buf[..{ header.keysize as usize }];
 
-    let valuebyte = &buf[{ header.keysize as usize }..{ header.keysize as usize + header.valuesize as usize }];
+    let valuebyte =
+        &buf[{ header.keysize as usize }..{ header.keysize as usize + header.valuesize as usize }];
 
-    let key: String = 
-        match decode_from_slice(keybyte, config::standard()) {
-            Ok(k) => k.0,
-            Err(e) => return Err(ServerError::UnableToDecodeBytes { e: Box::new(e) })
-        };
+    let key: String = match decode_from_slice(keybyte, config::standard()) {
+        Ok(k) => k.0,
+        Err(e) => return Err(ServerError::UnableToDecodeBytes { e: Box::new(e) }),
+    };
 
     let value = decode_from_slice(valuebyte, config::standard());
 
@@ -119,7 +126,12 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
     Ok(command)
 }
 
-fn execute_command(logger: Logger, stream: &mut TcpStream, kvstore: &mut KvStore, parsed: CliCommand) -> Result<(), Box<dyn Error>>{
+fn execute_command(
+    logger: Logger,
+    stream: &mut TcpStream,
+    kvstore: &mut KvStore,
+    parsed: CliCommand,
+) -> Result<(), Box<dyn Error>> {
     let command = parsed.command;
     let key = parsed.key;
     let val = parsed.value;
@@ -128,10 +140,11 @@ fn execute_command(logger: Logger, stream: &mut TcpStream, kvstore: &mut KvStore
             let res = kvstore.set(key, val.unwrap());
 
             info!(logger, "Application Info"; "Info" => "Set command succesfully ran");
-            if let Err(e) = res {return Err(Box::new(e));}
-        },
+            if let Err(e) = res {
+                return Err(Box::new(e));
+            }
+        }
         1 => {
-
             let res = kvstore.get(key).unwrap();
             match res {
                 Some(l) => {
@@ -140,19 +153,22 @@ fn execute_command(logger: Logger, stream: &mut TcpStream, kvstore: &mut KvStore
                     let _ = stream.write(&byte[..]).unwrap();
 
                     info!(logger, "Application Info"; "Info" => "Get command succesfully ran");
-                },
+                }
                 None => {
-                    let byte = encode_to_vec("Cant Get any key from the table", config::standard()).unwrap();
+                    let byte = encode_to_vec("Cant Get any key from the table", config::standard())
+                        .unwrap();
                     let _ = stream.write(&byte[..]);
                     return Err(Box::new(ServerError::GetFoundNone));
                 }
             }
-        },
+        }
         2 => {
             let res = kvstore.remove(key);
             info!(logger, "Application Info"; "Info" => "Remove command succesfully ran");
-            if let Err(e) = res {return Err(Box::new(e));}
-        },
+            if let Err(e) = res {
+                return Err(Box::new(e));
+            }
+        }
         _ => {
             return Err(Box::new(ServerError::CommandNotFound));
         }
@@ -164,30 +180,29 @@ fn handle_connection(mut stream: &mut TcpStream, logger: &Logger, store: &mut Kv
     let command = handle_listener(&mut stream);
     match command {
         Ok(log) => {
-                info!(logger,
-                    "Incoming Message";
-                    "Command" =>  format!("{:?}",log)
-                );
-                let res = execute_command(logger.clone(), stream, store, log);
-                match res{
-                    Ok(_) => (),
-                    Err(e) => {
-                        warn!(logger,
-                            "Application Warning";
-                            "Error:" => format!("{}",e)
-                        );
-                    }
+            info!(logger,
+                "Incoming Message";
+                "Command" =>  format!("{:?}",log)
+            );
+            let res = execute_command(logger.clone(), stream, store, log);
+            match res {
+                Ok(_) => (),
+                Err(e) => {
+                    warn!(logger,
+                        "Application Warning";
+                        "Error:" => format!("{}",e)
+                    );
                 }
-            },
+            }
+        }
 
         Err(e) => {
-                warn!(logger,
-                    "Application Warning";
-                    "Error:" => format!("{}",e)
-                );
-            }
+            warn!(logger,
+                "Application Warning";
+                "Error:" => format!("{}",e)
+            );
+        }
     }
-
 }
 
 #[derive(Parser, Debug)]
@@ -211,7 +226,6 @@ fn main() {
 
     let args = Args::parse();
     let mut store = KvStore::open(current_dir().unwrap().as_path()).unwrap();
-    
 
     // Initial logging
     info!(logger,
@@ -219,51 +233,21 @@ fn main() {
         "started_at" => format!("{}", args.address)
     );
 
-    let listener =
-        match TcpListener::bind(args.address) {
-            Ok(l) => l, 
-            Err(e) => {
-                    info!(logger,
-                        "Application Warning";
-                        "Error:"  => format!("{}",e)
-                    );
-                    panic!()
-            }
-        };
-    
+    let listener = match TcpListener::bind(args.address) {
+        Ok(l) => l,
+        Err(e) => {
+            info!(logger,
+                "Application Warning";
+                "Error:"  => format!("{}",e)
+            );
+            panic!()
+        }
+    };
+
     for stream_wrapped in listener.incoming() {
         let mut stream = stream_wrapped.unwrap();
-        scope(|scope|{
+        scope(|scope| {
             scope.spawn(|| handle_connection(&mut stream, &logger, &mut store));
         });
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
