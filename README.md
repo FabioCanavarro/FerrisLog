@@ -7,6 +7,7 @@ A persistent, log-structured key-value store implemented in Rust with a friendly
 
 ## Features
 
+- **Network Client Support**: Operations can be called from a device to a server
 - **Core Operations**: Set, get, and remove key-value pairs with easy commands
 - **Persistence**: All operations are logged as JSON to survive program restarts
 - **Log Compaction**: Automatic compaction when log size exceeds threshold
