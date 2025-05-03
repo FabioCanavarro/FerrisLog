@@ -148,7 +148,7 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
 fn execute_command(
     logger: Logger,
     stream: &mut TcpStream,
-    kvstore: &mut KvStore,
+    kvstore: Option<&mut KvStore>,
     parsed: CliCommand,
 ) -> Result<(), Box<dyn Error>> {
     let command = parsed.command;
@@ -156,7 +156,10 @@ fn execute_command(
     let val = parsed.value;
     match command {
         0 => {
-            let res = kvstore.set(key, val.unwrap());
+            let res = match kvstore {
+                Some(kvstore) => kvstore.set(key, val.unwrap()),
+                None => {todo!()}
+            };
 
             info!(logger, "Application Info"; "Info" => "Set command succesfully ran");
             if let Err(e) = res {
@@ -164,7 +167,10 @@ fn execute_command(
             }
         }
         1 => {
-            let res = kvstore.get(key).unwrap();
+            let res = match kvstore {
+                Some(kvstore) => kvstore.get(key).unwrap(),
+                None => {todo!()}
+            };
             match res {
                 Some(l) => {
                     let byte = encode_to_vec(l, config::standard()).unwrap();
@@ -182,7 +188,11 @@ fn execute_command(
             }
         }
         2 => {
-            let res = kvstore.remove(key);
+            let res = match kvstore {
+                Some(kvstore) => kvstore.remove(key),
+                None => {todo!()}
+            };
+
             info!(logger, "Application Info"; "Info" => "Remove command succesfully ran");
             if let Err(e) = res {
                 return Err(Box::new(e));
@@ -195,8 +205,8 @@ fn execute_command(
     Ok(())
 }
 
-fn handle_connection(mut stream: &mut TcpStream, logger: &Logger, store: &mut KvStore) {
-    let command = handle_listener(&mut stream);
+fn handle_connection(stream: &mut TcpStream, logger: &Logger, store: Option<&mut KvStore>) {
+    let command = handle_listener(stream);
     match command {
         Ok(log) => {
             info!(logger,
@@ -246,7 +256,13 @@ fn main() {
     let args = Args::parse();
     let engine: Engine = args.engine.into();
 
-    let mut store = KvStore::open(current_dir().unwrap().as_path()).unwrap();
+    
+    let mut store = if engine.is_kvs(){
+        Some(KvStore::open(current_dir().unwrap().as_path()).unwrap())
+    }
+    else {
+        None
+    };
 
     // Initial logging
     info!(logger,
