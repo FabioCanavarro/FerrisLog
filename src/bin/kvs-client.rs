@@ -1,5 +1,3 @@
-use bincode::{config, decode_from_slice, encode_to_vec};
-use clap::{Parser, Subcommand};
 use serde::Serialize;
 use std::{
     io::{Read, Write},

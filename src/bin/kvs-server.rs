@@ -19,6 +19,25 @@ enum Engine {
     Sled,
 }
 
+impl From<Engine> for String {
+    fn from(value: Engine) -> Self {
+        match value {
+            Engine::Kvs => "Kvs".to_string(),
+            Engine::Sled => "Sled".to_string(),
+        }
+    }
+}
+
+impl From<String> for Engine{
+    fn from(value: String) -> Self {
+        match value.as_ref() {
+            "Kvs" => Engine::Kvs,
+            "Sled" => Engine::Sled,
+            _ => panic!("Engine not chosen correctly")
+        }
+    }
+}
+
 #[derive(Debug)]
 enum ServerError {
     UnableToReadFromStream,
@@ -43,15 +62,6 @@ impl Display for ServerError {
 }
 
 impl Error for ServerError {}
-
-impl From<Engine> for String {
-    fn from(value: Engine) -> Self {
-        match value {
-            Engine::Kvs => "Kvs".to_string(),
-            Engine::Sled => "Sled".to_string(),
-        }
-    }
-}
 
 struct Header {
     command: u8,
@@ -225,6 +235,8 @@ fn main() {
     );
 
     let args = Args::parse();
+    let engine: Engine = args.engine.into();
+
     let mut store = KvStore::open(current_dir().unwrap().as_path()).unwrap();
 
     // Initial logging
