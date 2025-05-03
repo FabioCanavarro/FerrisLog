@@ -247,6 +247,7 @@ struct Args {
 fn main() {
     // Structured Logging
     let plain = PlainSyncDecorator::new(stdout());
+    let wrapped_db = sled::open("sledlog");
 
     let logger = Logger::root(
         slog_term::FullFormat::new(plain).build().fuse(),
@@ -259,6 +260,16 @@ fn main() {
     
     let mut store = if engine.is_kvs(){
         Some(KvStore::open(current_dir().unwrap().as_path()).unwrap())
+    }
+    else {
+        None
+    };
+
+    let db = if !engine.is_kvs() {
+        match wrapped_db {
+            Ok(db) => Some(db),
+            Err(e) => panic!("The path cannot be accessed")
+        }
     }
     else {
         None
