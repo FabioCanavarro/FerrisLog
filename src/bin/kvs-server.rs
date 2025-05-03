@@ -38,6 +38,15 @@ impl From<String> for Engine{
     }
 }
 
+impl Engine{
+    fn is_kvs(self) -> bool{
+        match self {
+            Engine::Kvs => true,
+            Engine::Sled => false
+        }
+    }
+}
+
 #[derive(Debug)]
 enum ServerError {
     UnableToReadFromStream,
