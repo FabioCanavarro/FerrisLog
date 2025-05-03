@@ -253,7 +253,7 @@ fn main() {
 
     let mut db = match wrapped_db {
         Ok(db) => db,
-        Err(e) => panic!(format!("The path cannot be accessed, Error: {}",e))
+        Err(e) => panic!("The path cannot be accessed, Error: {}",e)
     };
 
     // Initial logging
