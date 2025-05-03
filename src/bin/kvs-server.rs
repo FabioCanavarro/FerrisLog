@@ -1,6 +1,7 @@
 use bincode::{config, decode_from_slice, encode_to_vec};
 use clap::Parser;
 use ferris::kvstore::KvStore;
+use sled::Db;
 use slog::{info, o, warn, Drain, Logger};
 use slog_term::PlainSyncDecorator;
 use std::{
@@ -17,6 +18,34 @@ use std::{
 enum Engine {
     Kvs,
     Sled,
+}
+
+impl From<Engine> for String {
+    fn from(value: Engine) -> Self {
+        match value {
+            Engine::Kvs => "Kvs".to_string(),
+            Engine::Sled => "Sled".to_string(),
+        }
+    }
+}
+
+impl From<String> for Engine {
+    fn from(value: String) -> Self {
+        match value.as_ref() {
+            "Kvs" => Engine::Kvs,
+            "Sled" => Engine::Sled,
+            _ => panic!("Engine not chosen correctly"),
+        }
+    }
+}
+
+impl Engine {
+    fn is_kvs(self) -> bool {
+        match self {
+            Engine::Kvs => true,
+            Engine::Sled => false,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -43,15 +72,6 @@ impl Display for ServerError {
 }
 
 impl Error for ServerError {}
-
-impl From<Engine> for String {
-    fn from(value: Engine) -> Self {
-        match value {
-            Engine::Kvs => "Kvs".to_string(),
-            Engine::Sled => "Sled".to_string(),
-        }
-    }
-}
 
 struct Header {
     command: u8,
@@ -131,6 +151,7 @@ fn execute_command(
     stream: &mut TcpStream,
     kvstore: &mut KvStore,
     parsed: CliCommand,
+    db: &mut Db,
 ) -> Result<(), Box<dyn Error>> {
     let command = parsed.command;
     let key = parsed.key;
@@ -176,15 +197,21 @@ fn execute_command(
     Ok(())
 }
 
-fn handle_connection(mut stream: &mut TcpStream, logger: &Logger, store: &mut KvStore) {
-    let command = handle_listener(&mut stream);
+fn handle_connection(
+    stream: &mut TcpStream,
+    logger: &Logger,
+    store: &mut KvStore,
+    db: &mut Db,
+    engine: &Engine,
+) {
+    let command = handle_listener(stream);
     match command {
         Ok(log) => {
             info!(logger,
                 "Incoming Message";
                 "Command" =>  format!("{:?}",log)
             );
-            let res = execute_command(logger.clone(), stream, store, log);
+            let res = execute_command(logger.clone(), stream, store, log, db);
             match res {
                 Ok(_) => (),
                 Err(e) => {
@@ -218,6 +245,7 @@ struct Args {
 fn main() {
     // Structured Logging
     let plain = PlainSyncDecorator::new(stdout());
+    let wrapped_db = sled::open("sledlog");
 
     let logger = Logger::root(
         slog_term::FullFormat::new(plain).build().fuse(),
@@ -225,7 +253,14 @@ fn main() {
     );
 
     let args = Args::parse();
+    let engine: Engine = args.engine.into();
+
     let mut store = KvStore::open(current_dir().unwrap().as_path()).unwrap();
+
+    let mut db = match wrapped_db {
+        Ok(db) => db,
+        Err(e) => panic!("The path cannot be accessed, Error: {}", e),
+    };
 
     // Initial logging
     info!(logger,
@@ -247,7 +282,7 @@ fn main() {
     for stream_wrapped in listener.incoming() {
         let mut stream = stream_wrapped.unwrap();
         scope(|scope| {
-            scope.spawn(|| handle_connection(&mut stream, &logger, &mut store));
+            scope.spawn(|| handle_connection(&mut stream, &logger, &mut store, &mut db, &engine));
         });
     }
 }
