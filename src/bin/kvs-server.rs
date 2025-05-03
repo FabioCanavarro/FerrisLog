@@ -1,6 +1,7 @@
 use bincode::{config, decode_from_slice, encode_to_vec};
 use clap::Parser;
 use ferris::kvstore::KvStore;
+use sled::Db;
 use slog::{info, o, warn, Drain, Logger};
 use slog_term::PlainSyncDecorator;
 use std::{
@@ -148,64 +149,55 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
 fn execute_command(
     logger: Logger,
     stream: &mut TcpStream,
-    kvstore: Option<&mut KvStore>,
+    kvstore: &mut KvStore,
     parsed: CliCommand,
+    db: &mut Db
 ) -> Result<(), Box<dyn Error>> {
     let command = parsed.command;
     let key = parsed.key;
     let val = parsed.value;
     match command {
-        0 => {
-            let res = match kvstore {
-                Some(kvstore) => kvstore.set(key, val.unwrap()),
-                None => {todo!()}
-            };
+            0 => {
+                let res = kvstore.set(key, val.unwrap());
 
-            info!(logger, "Application Info"; "Info" => "Set command succesfully ran");
-            if let Err(e) = res {
-                return Err(Box::new(e));
-            }
-        }
-        1 => {
-            let res = match kvstore {
-                Some(kvstore) => kvstore.get(key).unwrap(),
-                None => {todo!()}
-            };
-            match res {
-                Some(l) => {
-                    let byte = encode_to_vec(l, config::standard()).unwrap();
-                    let _ = stream.write(&[byte.len() as u8]).unwrap();
-                    let _ = stream.write(&byte[..]).unwrap();
-
-                    info!(logger, "Application Info"; "Info" => "Get command succesfully ran");
-                }
-                None => {
-                    let byte = encode_to_vec("Cant Get any key from the table", config::standard())
-                        .unwrap();
-                    let _ = stream.write(&byte[..]);
-                    return Err(Box::new(ServerError::GetFoundNone));
+                info!(logger, "Application Info"; "Info" => "Set command succesfully ran");
+                if let Err(e) = res {
+                    return Err(Box::new(e));
                 }
             }
-        }
-        2 => {
-            let res = match kvstore {
-                Some(kvstore) => kvstore.remove(key),
-                None => {todo!()}
-            };
+            1 => {
+                let res = kvstore.get(key).unwrap();
+                match res {
+                    Some(l) => {
+                        let byte = encode_to_vec(l, config::standard()).unwrap();
+                        let _ = stream.write(&[byte.len() as u8]).unwrap();
+                        let _ = stream.write(&byte[..]).unwrap();
 
-            info!(logger, "Application Info"; "Info" => "Remove command succesfully ran");
-            if let Err(e) = res {
-                return Err(Box::new(e));
+                        info!(logger, "Application Info"; "Info" => "Get command succesfully ran");
+                    }
+                    None => {
+                        let byte = encode_to_vec("Cant Get any key from the table", config::standard())
+                            .unwrap();
+                        let _ = stream.write(&byte[..]);
+                        return Err(Box::new(ServerError::GetFoundNone));
+                    }
+                }
+            }
+            2 => {
+                let res = kvstore.remove(key);
+                info!(logger, "Application Info"; "Info" => "Remove command succesfully ran");
+                if let Err(e) = res {
+                    return Err(Box::new(e));
+                }
+            }
+            _ => {
+                return Err(Box::new(ServerError::CommandNotFound));
             }
         }
-        _ => {
-            return Err(Box::new(ServerError::CommandNotFound));
-        }
-    }
     Ok(())
 }
 
-fn handle_connection(stream: &mut TcpStream, logger: &Logger, store: Option<&mut KvStore>) {
+fn handle_connection(stream: &mut TcpStream, logger: &Logger, store: &mut KvStore, db: &mut Db, engine: &Engine) {
     let command = handle_listener(stream);
     match command {
         Ok(log) => {
@@ -213,7 +205,7 @@ fn handle_connection(stream: &mut TcpStream, logger: &Logger, store: Option<&mut
                 "Incoming Message";
                 "Command" =>  format!("{:?}",log)
             );
-            let res = execute_command(logger.clone(), stream, store, log);
+            let res = execute_command(logger.clone(), stream, store, log, db);
             match res {
                 Ok(_) => (),
                 Err(e) => {
@@ -257,22 +249,11 @@ fn main() {
     let args = Args::parse();
     let engine: Engine = args.engine.into();
 
-    
-    let mut store = if engine.is_kvs(){
-        Some(KvStore::open(current_dir().unwrap().as_path()).unwrap())
-    }
-    else {
-        None
-    };
+    let mut store = KvStore::open(current_dir().unwrap().as_path()).unwrap();
 
-    let db = if !engine.is_kvs() {
-        match wrapped_db {
-            Ok(db) => Some(db),
-            Err(e) => panic!("The path cannot be accessed")
-        }
-    }
-    else {
-        None
+    let mut db = match wrapped_db {
+        Ok(db) => db,
+        Err(e) => panic!(format!("The path cannot be accessed, Error: {}",e))
     };
 
     // Initial logging
@@ -292,10 +273,12 @@ fn main() {
         }
     };
 
+
+
     for stream_wrapped in listener.incoming() {
         let mut stream = stream_wrapped.unwrap();
         scope(|scope| {
-            scope.spawn(|| handle_connection(&mut stream, &logger, &mut store));
+            scope.spawn(|| handle_connection(&mut stream, &logger, &mut store, &mut db, &engine));
         });
     }
 }
