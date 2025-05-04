@@ -1,6 +1,6 @@
 use bincode::{config, decode_from_slice, encode_to_vec};
 use clap::Parser;
-use ferris::kvstore::KvStore;
+use ferris::kvstore::{error::KvError, KvStore};
 use sled::Db;
 use slog::{info, o, warn, Drain, Logger};
 use slog_term::PlainSyncDecorator;
@@ -235,8 +235,10 @@ fn handle_connection(
 trait KvEngine{
     fn get(&self, key: String) -> Result<Option<String>,Box<dyn Error>>;
     fn set(&self, key: String, val: String) -> Result<(),Box<dyn Error>>;
-    fn rm(&self, key: String) -> Result<(),Box<dyn Error>>;
+    fn remove(&self, key: String) -> Result<(),Box<dyn Error>>;
 }
+
+
 
 #[derive(Parser, Debug)]
 #[command(version, about)]

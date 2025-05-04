@@ -46,73 +46,6 @@ impl KvStore {
         Ok(())
     }
 
-    pub fn set(&mut self, key: String, val: String) -> KvResult<()> {
-        let cmd = Command::set(key.clone(), val.clone());
-
-        let mut f = File::options()
-            .read(true)
-            .append(true)
-            .open(&self.path)
-            .unwrap();
-
-        let start_pos = f.seek(SeekFrom::End(0)).unwrap();
-        let _ = serde_json::to_writer(&mut f, &cmd);
-        let _ = f.write_all(b"\n");
-        self.table.insert(key, start_pos);
-
-        let size = fs::metadata(&self.path);
-
-        let length = size.unwrap().len();
-
-        if length > COMPACTION_THRESHOLD {
-            let _ = self.compaction();
-        }
-
-        Ok(())
-    }
-
-    pub fn get(&self, key: String) -> KvResult<Option<String>> {
-        let val = self.table.get(&key);
-        match &val {
-            Some(_) => (),
-            None => return Ok(None),
-        }
-
-        let file = File::options().read(true).open(&self.path).unwrap();
-
-        let mut f = BufReader::new(file);
-
-        // Seek from val to the \n
-        let _ = f.seek(SeekFrom::Start(*val.unwrap()));
-        let mut line = String::new();
-        let _ = f.read_line(&mut line);
-        let res = serde_json::from_str::<Command>(&line.to_string());
-        match res {
-            Ok(re) => match re {
-                Command::Set { key: _, val } => Ok(Some(val)),
-                _ => Ok(None),
-            },
-            Err(_) => Err(KvError::ParseError),
-        }
-    }
-
-    pub fn remove(&mut self, key: String) -> KvResult<()> {
-        let cmd = Command::rm(key.clone());
-
-        let mut f = File::options()
-            .read(true)
-            .append(true)
-            .open(&self.path)
-            .unwrap();
-
-        let _ = serde_json::to_writer(&mut f, &cmd);
-        let _ = f.write_all(b"\n");
-        match self.table.remove(&key) {
-            Some(_) => Ok(()),
-            None => Err(KvError::RemoveError),
-        }
-    }
-
     pub fn open(path: impl Into<PathBuf> + AsRef<Path> + Copy) -> KvResult<KvStore> {
         let f = match File::open(path.into().join("log.txt")) {
             Ok(f) => f,
@@ -242,4 +175,74 @@ impl KvStore {
 
         Ok(())
     }
+}
+
+impl KvEngine for KvError{
+    fn set(&mut self, key: String, val: String) -> KvResult<()> {
+        let cmd = Command::set(key.clone(), val.clone());
+
+        let mut f = File::options()
+            .read(true)
+            .append(true)
+            .open(&self.path)
+            .unwrap();
+
+        let start_pos = f.seek(SeekFrom::End(0)).unwrap();
+        let _ = serde_json::to_writer(&mut f, &cmd);
+        let _ = f.write_all(b"\n");
+        self.table.insert(key, start_pos);
+
+        let size = fs::metadata(&self.path);
+
+        let length = size.unwrap().len();
+
+        if length > COMPACTION_THRESHOLD {
+            let _ = self.compaction();
+        }
+
+        Ok(())
+    }
+
+    fn get(&self, key: String) -> KvResult<Option<String>> {
+        let val = self.table.get(&key);
+        match &val {
+            Some(_) => (),
+            None => return Ok(None),
+        }
+
+        let file = File::options().read(true).open(&self.path).unwrap();
+
+        let mut f = BufReader::new(file);
+
+        // Seek from val to the \n
+        let _ = f.seek(SeekFrom::Start(*val.unwrap()));
+        let mut line = String::new();
+        let _ = f.read_line(&mut line);
+        let res = serde_json::from_str::<Command>(&line.to_string());
+        match res {
+            Ok(re) => match re {
+                Command::Set { key: _, val } => Ok(Some(val)),
+                _ => Ok(None),
+            },
+            Err(_) => Err(KvError::ParseError),
+        }
+    }
+
+    fn remove(&mut self, key: String) -> KvResult<()> {
+        let cmd = Command::rm(key.clone());
+
+        let mut f = File::options()
+            .read(true)
+            .append(true)
+            .open(&self.path)
+            .unwrap();
+
+        let _ = serde_json::to_writer(&mut f, &cmd);
+        let _ = f.write_all(b"\n");
+        match self.table.remove(&key) {
+            Some(_) => Ok(()),
+            None => Err(KvError::RemoveError),
+        }
+    }
+
 }
