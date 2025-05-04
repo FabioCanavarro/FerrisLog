@@ -232,6 +232,12 @@ fn handle_connection(
     }
 }
 
+trait KvEngine{
+    fn get(&self, key: String) -> Result<Option<String>,Box<dyn Error>>;
+    fn set(&self, key: String, val: String) -> Result<(),Box<dyn Error>>;
+    fn rm(&self, key: String) -> Result<(),Box<dyn Error>>;
+}
+
 #[derive(Parser, Debug)]
 #[command(version, about)]
 struct Args {
