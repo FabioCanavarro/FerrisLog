@@ -153,7 +153,7 @@ fn execute_command<T: KvEngine>(
             let res = store.tget(key).unwrap();
             match res {
                 Some(l) => {
-                    let byte = encode_to_vec(l, config::standard()).unwrap();
+                    let byte = encode_to_vec(l, config::standard()).unwrap_or("Get Error Found None".as_bytes().to_vec());
                     let _ = stream.write(&[byte.len() as u8]).unwrap();
                     let _ = stream.write(&byte[..]).unwrap();
 
