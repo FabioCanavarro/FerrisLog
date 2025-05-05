@@ -1,6 +1,6 @@
 use bincode::{config, decode_from_slice, encode_to_vec};
 use clap::Parser;
-use ferris::kvstore::KvStore;
+use ferris::{kv_engine::KvEngine, kvstore::KvStore};
 use sled::Db;
 use slog::{info, o, warn, Drain, Logger};
 use slog_term::PlainSyncDecorator;
@@ -146,27 +146,26 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
     Ok(command)
 }
 
-fn execute_command(
+fn execute_command<T: KvEngine>(
     logger: Logger,
     stream: &mut TcpStream,
-    kvstore: &mut KvStore,
+    kvstore: &mut T,
     parsed: CliCommand,
-    db: &mut Db,
 ) -> Result<(), Box<dyn Error>> {
     let command = parsed.command;
     let key = parsed.key;
     let val = parsed.value;
     match command {
         0 => {
-            let res = kvstore.set(key, val.unwrap());
+            let res = kvstore.tset(key, val.unwrap());
 
             info!(logger, "Application Info"; "Info" => "Set command succesfully ran");
             if let Err(e) = res {
-                return Err(Box::new(e));
+                return Err(e);
             }
         }
         1 => {
-            let res = kvstore.get(key).unwrap();
+            let res = kvstore.tget(key).unwrap();
             match res {
                 Some(l) => {
                     let byte = encode_to_vec(l, config::standard()).unwrap();
@@ -184,10 +183,10 @@ fn execute_command(
             }
         }
         2 => {
-            let res = kvstore.remove(key);
+            let res = kvstore.tremove(key);
             info!(logger, "Application Info"; "Info" => "Remove command succesfully ran");
             if let Err(e) = res {
-                return Err(Box::new(e));
+                return Err(e);
             }
         }
         _ => {
@@ -197,12 +196,10 @@ fn execute_command(
     Ok(())
 }
 
-fn handle_connection(
+fn handle_connection<T: KvEngine>(
     stream: &mut TcpStream,
     logger: &Logger,
-    store: &mut KvStore,
-    db: &mut Db,
-    engine: &Engine,
+    store: &mut T,
 ) {
     let command = handle_listener(stream);
     match command {
@@ -211,7 +208,7 @@ fn handle_connection(
                 "Incoming Message";
                 "Command" =>  format!("{:?}",log)
             );
-            let res = execute_command(logger.clone(), stream, store, log, db);
+            let res = execute_command(logger.clone(), stream, store, log);
             match res {
                 Ok(_) => (),
                 Err(e) => {
@@ -280,7 +277,7 @@ fn main() {
     for stream_wrapped in listener.incoming() {
         let mut stream = stream_wrapped.unwrap();
         scope(|scope| {
-            scope.spawn(|| handle_connection(&mut stream, &logger, &mut store, &mut db, &engine));
+            scope.spawn(|| handle_connection(&mut stream, &logger, &mut store));
         });
     }
 }
