@@ -31,9 +31,10 @@ impl KvEngine for sled::Db{
         Ok(())
     }
     fn tget(&self, key: String) -> Result<Option<String>,Box<dyn Error>> {
+        let val = self.get(key)?.unwrap();
         Ok(
             Some(
-                stringify!(self.get(key)??).to_string()
+                String::from_utf8_lossy(&val.to_vec()[..]).to_string()
             )
         )
     }

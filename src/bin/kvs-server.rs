@@ -39,15 +39,6 @@ impl From<String> for Engine {
     }
 }
 
-impl Engine {
-    fn is_kvs(self) -> bool {
-        match self {
-            Engine::Kvs => true,
-            Engine::Sled => false,
-        }
-    }
-}
-
 #[derive(Debug)]
 enum ServerError {
     UnableToReadFromStream,
@@ -149,7 +140,7 @@ fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
 fn execute_command<T: KvEngine>(
     logger: Logger,
     stream: &mut TcpStream,
-    kvstore: &mut T,
+    store: &mut T,
     parsed: CliCommand,
 ) -> Result<(), Box<dyn Error>> {
     let command = parsed.command;
@@ -157,15 +148,12 @@ fn execute_command<T: KvEngine>(
     let val = parsed.value;
     match command {
         0 => {
-            let res = kvstore.tset(key, val.unwrap());
+            store.tset(key, val.unwrap())?;
 
             info!(logger, "Application Info"; "Info" => "Set command succesfully ran");
-            if let Err(e) = res {
-                return Err(e);
-            }
         }
         1 => {
-            let res = kvstore.tget(key).unwrap();
+            let res = store.tget(key).unwrap();
             match res {
                 Some(l) => {
                     let byte = encode_to_vec(l, config::standard()).unwrap();
@@ -183,11 +171,8 @@ fn execute_command<T: KvEngine>(
             }
         }
         2 => {
-            let res = kvstore.tremove(key);
+            store.tremove(key)?;
             info!(logger, "Application Info"; "Info" => "Remove command succesfully ran");
-            if let Err(e) = res {
-                return Err(e);
-            }
         }
         _ => {
             return Err(Box::new(ServerError::CommandNotFound));
@@ -274,10 +259,23 @@ fn main() {
         }
     };
 
-    for stream_wrapped in listener.incoming() {
-        let mut stream = stream_wrapped.unwrap();
-        scope(|scope| {
-            scope.spawn(|| handle_connection(&mut stream, &logger, &mut store));
-        });
+    match engine {
+        Engine::Kvs => {
+            for stream_wrapped in listener.incoming() {
+                let mut stream = stream_wrapped.unwrap();
+                scope(|scope| {
+                    scope.spawn(|| handle_connection(&mut stream, &logger, &mut store));
+            });
     }
+        },
+        Engine::Sled => {
+            for stream_wrapped in listener.incoming() {
+                let mut stream = stream_wrapped.unwrap();
+                scope(|scope| {
+                    scope.spawn(|| handle_connection(&mut stream, &logger, &mut db));
+                });
+            }
+        }
+    }
+
 }
