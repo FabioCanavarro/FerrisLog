@@ -158,7 +158,7 @@ fn execute_command<T: KvEngine>(
                     let _ = stream.write(&byte[..]).unwrap();
 
                     info!(logger, "Application Info"; "Info" => "Get command succesfully ran");
-                    info!(logger, "Application Info"; "Info" => format!("Sent back {:?}",&byte));
+                    info!(logger, "Application Info"; "Info" => format!("Sent back {}",&byte));
                 }
                 None => {
                     let byte = encode_to_vec("Cant Get any key from the table", config::standard())

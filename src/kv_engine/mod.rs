@@ -1,5 +1,4 @@
 use std::error::Error;
-
 use crate::kvstore::KvStore;
 
 // NOTE: t{command} stands for KvEngine command
@@ -23,15 +22,15 @@ impl KvEngine for KvStore{
 
 impl KvEngine for sled::Db{
     fn tremove(&mut self, key: String) -> Result<(),Box<dyn Error>> {
-        self.remove(key)?;
+        self.remove(key.as_bytes())?;
         Ok(())
     }
     fn tset(&mut self, key: String, val: String) -> Result<(),Box<dyn Error>> {
-        self.insert(key, val.as_bytes())?;
+        self.insert(key.as_bytes(), val.as_bytes())?;
         Ok(())
     }
     fn tget(&self, key: String) -> Result<Option<String>,Box<dyn Error>> {
-        let val = self.get(key)?.unwrap();
+        let val = self.get(key.as_bytes())?.unwrap();
         Ok(
             Some(
                 String::from_utf8_lossy(&val.to_vec()[..]).to_string()
