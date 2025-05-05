@@ -10,6 +10,7 @@ pub enum KvError {
     OpenError { path: PathBuf },
     ParseError,
     RemoveError,
+    EngineError
 }
 
 impl fmt::Display for KvError {
@@ -20,6 +21,7 @@ impl fmt::Display for KvError {
             KvError::OpenError { path: _ } => writeln!(f, "Opening has failed!"),
             KvError::ParseError => writeln!(f, "Parsing has failed!"),
             KvError::RemoveError => writeln!(f, "Unable to remove!"),
+            KvError::EngineError => writeln!(f, "None Value is Found, Command has failed!!!"),
         }
     }
 }

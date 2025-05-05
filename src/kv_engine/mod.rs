@@ -1,5 +1,7 @@
 use std::error::Error;
-use crate::kvstore::KvStore;
+use crate::kvstore::{error::KvError, KvStore};
+
+
 
 // NOTE: t{command} stands for KvEngine command
 pub trait KvEngine{
@@ -30,12 +32,18 @@ impl KvEngine for sled::Db{
         Ok(())
     }
     fn tget(&self, key: String) -> Result<Option<String>,Box<dyn Error>> {
-        let val = self.get(key.as_bytes())?.unwrap();
-        Ok(
-            Some(
-                String::from_utf8_lossy(&val.to_vec()[..]).to_string()
-            )
-        )
+        let val = self.get(key.as_bytes())?;
+        match val{
+            Some(val) => {
+                Ok(
+                    Some(
+                        String::from_utf8_lossy(&val.to_vec()[..]).to_string()
+                    )
+                )
+            },
+            None => Err(Box::new(KvError::EngineError))
+        }
+        
     }
 }
 
