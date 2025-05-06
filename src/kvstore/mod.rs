@@ -7,7 +7,6 @@ use std::{
 };
 pub mod command;
 pub mod error;
-
 use chrono::Local;
 use command::Command;
 use error::{KvError, KvResult};
@@ -45,6 +44,7 @@ impl KvStore {
 
         Ok(())
     }
+    
 
     pub fn set(&mut self, key: String, val: String) -> KvResult<()> {
         let cmd = Command::set(key.clone(), val.clone());
@@ -113,7 +113,7 @@ impl KvStore {
         }
     }
 
-    pub fn open(path: impl Into<PathBuf> + AsRef<Path> + Copy) -> KvResult<KvStore> {
+     pub fn open(path: impl Into<PathBuf> + AsRef<Path> + Copy) -> KvResult<KvStore> {
         let f = match File::open(path.into().join("log.txt")) {
             Ok(f) => f,
             Err(_) => {
@@ -243,3 +243,4 @@ impl KvStore {
         Ok(())
     }
 }
+

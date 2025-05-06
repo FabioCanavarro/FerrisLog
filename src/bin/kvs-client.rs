@@ -52,8 +52,8 @@ fn main() {
         Commands::set { key, val } => {
             let command = [0_u8];
 
-            let bytekey = encode_to_vec(val, config).unwrap();
-            let byteval = encode_to_vec(key, config).unwrap();
+            let bytekey = encode_to_vec(key, config).unwrap();
+            let byteval = encode_to_vec(val, config).unwrap();
 
             /* println!(
                 "Data sent: {:?} {:?} {:?} {:?} {:?}",
