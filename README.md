@@ -3,6 +3,8 @@
 [![Rust](https://img.shields.io/badge/Rust-1.72%2B-orange)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
+[![Rust](https://github.com/FabioCanavarro/FerrisLog-ServerClient/actions/workflows/-rust.yml/badge.svg)](https://github.com/FabioCanavarro/FerrisLog-ServerClient/actions/workflows/-rust.yml)
+
 A persistent, log-structured key-value store implemented in Rust with a friendly CLI interface. Designed for reliability, simplicity, and educational purposes.
 
 ## Features
