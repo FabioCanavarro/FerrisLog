@@ -10,23 +10,33 @@ use std::{env::current_dir, io::stdout, net::TcpListener, thread::scope};
 #[command(version, about)]
 struct Args {
     #[arg(short, long)]
-    address: String,
+    addr: String,
 
     #[arg(short,long, default_value_t=String::from("Kvs"))]
     engine: String,
 }
 
 fn main() {
+    // Parsing arguments from the cli
+    let args = Args::parse();
+
     // Structured logging with slog
     let plain = PlainSyncDecorator::new(stdout());
 
     let logger = Logger::root(
         slog_term::FullFormat::new(plain).build().fuse(),
-        o!("version" => "0.1"),
+        o!(
+            "version" => "0.1",
+        ),
     );
 
-    // Parsing arguments from the cli
-    let args = Args::parse();
+    info!(logger,
+        "Application started";
+        "started_at" => format!("{}", args.addr),
+        "Engine" => &args.engine
+    );
+
+
     let engine: Engine = args.engine.into();
 
     // Opening sled
@@ -49,14 +59,10 @@ fn main() {
         Err(e) => panic!("The path cannot be accessed, Error: {}", e),
     };
 
-    // Logging intro
-    info!(logger,
-        "Application started";
-        "started_at" => format!("{}", args.address)
-    );
+
 
     // Binding to the address given
-    let listener = match TcpListener::bind(args.address) {
+    let listener = match TcpListener::bind(args.addr) {
         Ok(l) => l,
         Err(e) => {
             info!(logger,

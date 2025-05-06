@@ -14,7 +14,7 @@ struct Cli {
     command: Option<Commands>,
 
     #[arg(short, long)]
-    address: String,
+    addr: String,
 }
 
 #[derive(Subcommand, Serialize)]
@@ -43,7 +43,7 @@ fn main() {
     }
 
     // Bind to the address
-    let mut stream = match TcpStream::connect(&cli.address) {
+    let mut stream = match TcpStream::connect(&cli.addr) {
         Ok(stream) => stream,
         Err(e) => {
             panic!("{}", e);
@@ -96,17 +96,29 @@ fn main() {
             let _ = stream.shutdown(std::net::Shutdown::Write);
 
             let mut size: [u8; 1] = [0];
-            stream.read_exact(&mut size).unwrap();
+            
+            match stream.read_exact(&mut size) {
+                Ok(_) => (),
+                Err(_) => {
+                    println!("Key not found");
+                    return;
+                }
+            }
 
             let mut buf: Vec<u8> = Vec::new();
-            stream.read_to_end(&mut buf).unwrap();
+            match stream.read_to_end(&mut buf) {
+                Ok(_) => (),
+                Err(_) => {
+                    println!("Key not found");
+                    return;
+                }
+            }
 
             let byte: Result<(String, usize), bincode::error::DecodeError> = decode_from_slice(&buf[..], config::standard());
 
             match byte {
                 Ok(b) => println!("{}", b.0),
-                Err(_) => println!("Found Nothing")
-
+                Err(_) => println!("Key not found")
             }
 
         }
