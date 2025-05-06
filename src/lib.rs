@@ -7,6 +7,6 @@ extern crate sled;
 extern crate slog;
 extern crate slog_term;
 
-pub mod kvstore;
 pub mod kv_engine;
+pub mod kvstore;
 pub mod server;

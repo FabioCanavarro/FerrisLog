@@ -22,4 +22,3 @@ impl Display for ServerError {
 }
 
 impl Error for ServerError {}
-

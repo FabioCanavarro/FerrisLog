@@ -1,4 +1,8 @@
-use std::{error::Error, io::{Read, Write}, net::TcpStream};
+use std::{
+    error::Error,
+    io::{Read, Write},
+    net::TcpStream,
+};
 
 use bincode::{config, decode_from_slice, encode_to_vec};
 use slog::{info, warn, Logger};
@@ -42,8 +46,8 @@ impl Header {
 
 fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
     /*
-    * Reads data from the TcpStream and parse them into the CliCommand struct
-    */
+     * Reads data from the TcpStream and parse them into the CliCommand struct
+     */
     let mut buf: [u8; 3] = [0, 0, 0];
 
     let _ = stream.flush();
@@ -90,9 +94,9 @@ fn execute_command<T: KvEngine>(
     parsed: CliCommand,
 ) -> Result<(), Box<dyn Error>> {
     /*
-    * Executes the command based on the parsed CliCommand,
-    * Logs to the command executed, their outputs and their inputs to the logger
-    */
+     * Executes the command based on the parsed CliCommand,
+     * Logs to the command executed, their outputs and their inputs to the logger
+     */
     let command = parsed.command;
     let key = parsed.key;
     let val = parsed.value;
@@ -106,7 +110,8 @@ fn execute_command<T: KvEngine>(
             let res = store.tget(key).unwrap();
             match res {
                 Some(l) => {
-                    let byte = encode_to_vec(l, config::standard()).unwrap_or("Get Error Found None".as_bytes().to_vec());
+                    let byte = encode_to_vec(l, config::standard())
+                        .unwrap_or("Get Error Found None".as_bytes().to_vec());
                     let _ = stream.write(&[byte.len() as u8]).unwrap();
                     let _ = stream.write(&byte[..]).unwrap();
 
@@ -132,14 +137,10 @@ fn execute_command<T: KvEngine>(
     Ok(())
 }
 
-pub fn handle_connection<T: KvEngine>(
-    stream: &mut TcpStream,
-    logger: &Logger,
-    store: &mut T,
-) {
+pub fn handle_connection<T: KvEngine>(stream: &mut TcpStream, logger: &Logger, store: &mut T) {
     /*
-    * The base function that handles the connection
-    */
+     * The base function that handles the connection
+     */
     let command = handle_listener(stream);
     match command {
         Ok(log) => {

@@ -1,16 +1,10 @@
 use clap::Parser;
 use ferris::kvstore::KvStore;
-use slog::{info, o, Drain, Logger};
-use slog_term::PlainSyncDecorator;
-use std::{
-    env::current_dir,
-    io::stdout,
-    net::TcpListener,
-    thread::scope,
-};
 use ferris::server::engine::Engine;
 use ferris::server::handler::handle_connection;
-
+use slog::{info, o, Drain, Logger};
+use slog_term::PlainSyncDecorator;
+use std::{env::current_dir, io::stdout, net::TcpListener, thread::scope};
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
@@ -80,9 +74,9 @@ fn main() {
                 let mut stream = stream_wrapped.unwrap();
                 scope(|scope| {
                     scope.spawn(|| handle_connection(&mut stream, &logger, &mut store));
-            });
-    }
-        },
+                });
+            }
+        }
         Engine::Sled => {
             for stream_wrapped in listener.incoming() {
                 let mut stream = stream_wrapped.unwrap();
@@ -92,5 +86,4 @@ fn main() {
             }
         }
     }
-
 }
