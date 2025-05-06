@@ -23,30 +23,45 @@ struct Args {
 }
 
 fn main() {
-    // Structured Logging
+    // Structured logging with slog
     let plain = PlainSyncDecorator::new(stdout());
-    let wrapped_db = sled::open("sledlog");
 
     let logger = Logger::root(
         slog_term::FullFormat::new(plain).build().fuse(),
         o!("version" => "0.1"),
     );
 
+    // Parsing arguments from the cli
     let args = Args::parse();
     let engine: Engine = args.engine.into();
 
-    let mut store = KvStore::open(current_dir().unwrap().as_path()).unwrap();
+    // Opening sled
+    let wrapped_db = sled::open("sledlog");
 
+    // Opening KvStore
+    let wrapped_store = KvStore::open(current_dir().unwrap().as_path());
+
+    // NOTE: I open both Kvstore and Sled just in case any of them is used
+    // They will have seperate logs and data
+
+    // Error Handling, just in case path can't be accessed
     let mut db = match wrapped_db {
         Ok(db) => db,
         Err(e) => panic!("The path cannot be accessed, Error: {}", e),
     };
 
+    let mut store = match wrapped_store {
+        Ok(store) => store,
+        Err(e) => panic!("The path cannot be accessed, Error: {}", e),
+    };
+
+    // Logging intro
     info!(logger,
         "Application started";
         "started_at" => format!("{}", args.address)
     );
 
+    // Binding to the address given
     let listener = match TcpListener::bind(args.address) {
         Ok(l) => l,
         Err(e) => {
@@ -58,6 +73,7 @@ fn main() {
         }
     };
 
+    // Match which engine is used
     match engine {
         Engine::Kvs => {
             for stream_wrapped in listener.incoming() {
