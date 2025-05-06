@@ -10,7 +10,7 @@ pub enum KvError {
     OpenError { path: PathBuf },
     ParseError,
     RemoveError,
-    EngineError
+    EngineError,
 }
 
 impl fmt::Display for KvError {

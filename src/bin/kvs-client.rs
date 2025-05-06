@@ -36,11 +36,13 @@ fn main() {
     let cli = Cli::parse();
     let config = config::standard();
 
+    // Return the helping description if they didnt specify any arguments
     if cli.command.is_none() {
         Cli::parse_from(["kvs", "--help"]);
         return;
     }
 
+    // Bind to the address
     let mut stream = match TcpStream::connect(&cli.address) {
         Ok(stream) => stream,
         Err(e) => {
@@ -48,6 +50,7 @@ fn main() {
         }
     };
 
+    // Match the command
     match cli.command.unwrap() {
         Commands::set { key, val } => {
             let command = [0_u8];
@@ -98,9 +101,14 @@ fn main() {
             let mut buf: Vec<u8> = Vec::new();
             stream.read_to_end(&mut buf).unwrap();
 
-            let byte: String = decode_from_slice(&buf[..], config::standard()).unwrap().0;
+            let byte: Result<(String, usize), bincode::error::DecodeError> = decode_from_slice(&buf[..], config::standard());
 
-            println!("{}", byte)
+            match byte {
+                Ok(b) => println!("{}", b.0),
+                Err(_) => println!("Found Nothing")
+
+            }
+
         }
 
         Commands::rm { key } => {
