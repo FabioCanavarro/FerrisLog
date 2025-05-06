@@ -107,9 +107,10 @@ fn execute_command<T: KvEngine>(
             info!(logger, "Application Info"; "Info" => "Set command succesfully ran");
         }
         1 => {
-            let res = store.tget(key).unwrap();
+            let res = store.tget(key);
             match res {
-                Some(l) => {
+                Ok(l) => {
+                    let l = l.unwrap();
                     let byte = encode_to_vec(l, config::standard())
                         .unwrap_or("Get Error Found None".as_bytes().to_vec());
                     let _ = stream.write(&[byte.len() as u8]).unwrap();
@@ -118,10 +119,14 @@ fn execute_command<T: KvEngine>(
                     info!(logger, "Application Info"; "Info" => "Get command succesfully ran");
                     info!(logger, "Application Info"; "Info" => format!("Sent back {:?}",&byte));
                 }
-                None => {
+                Err(e) => {
                     let byte = encode_to_vec("Cant Get any key from the table", config::standard())
                         .unwrap();
                     let _ = stream.write(&byte[..]);
+                    warn!(logger,
+                        "Application Warning";
+                        "Error:" => format!("{:?} and {:?}",ServerError::GetFoundNone,e)
+                    );
                     return Err(Box::new(ServerError::GetFoundNone));
                 }
             }

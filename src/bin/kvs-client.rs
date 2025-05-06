@@ -101,9 +101,14 @@ fn main() {
             let mut buf: Vec<u8> = Vec::new();
             stream.read_to_end(&mut buf).unwrap();
 
-            let byte: String = decode_from_slice(&buf[..], config::standard()).unwrap().0;
+            let byte: Result<(String, usize), bincode::error::DecodeError> = decode_from_slice(&buf[..], config::standard());
 
-            println!("{}", byte)
+            match byte {
+                Ok(b) => println!("{}", b.0),
+                Err(_) => println!("Found Nothing")
+
+            }
+
         }
 
         Commands::rm { key } => {
