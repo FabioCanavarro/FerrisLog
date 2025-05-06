@@ -41,6 +41,9 @@ impl Header {
 }
 
 fn handle_listener(stream: &mut TcpStream) -> Result<CliCommand, ServerError> {
+    /*
+    * Reads data from the TcpStream and parse them into the CliCommand struct
+    */
     let mut buf: [u8; 3] = [0, 0, 0];
 
     let _ = stream.flush();
@@ -86,6 +89,10 @@ fn execute_command<T: KvEngine>(
     store: &mut T,
     parsed: CliCommand,
 ) -> Result<(), Box<dyn Error>> {
+    /*
+    * Executes the command based on the parsed CliCommand,
+    * Logs to the command executed, their outputs and their inputs to the logger
+    */
     let command = parsed.command;
     let key = parsed.key;
     let val = parsed.value;
@@ -130,6 +137,9 @@ pub fn handle_connection<T: KvEngine>(
     logger: &Logger,
     store: &mut T,
 ) {
+    /*
+    * The base function that handles the connection
+    */
     let command = handle_listener(stream);
     match command {
         Ok(log) => {
