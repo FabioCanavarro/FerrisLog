@@ -52,25 +52,6 @@ kvs get username
 # Output: Key not found
 ```
 
-### Advanced Features
-```bash
-# List all keys in the store
-kvs list_key
-# Output: Keys: config, username, settings, 
-
-# Count the number of keys
-kvs count
-# Output: 3
-
-# Create a snapshot (backup)
-kvs create_snapshot
-# Output: Snapshot Created at /path/to/snapshots/log_2025-03-19_14-30-00.txt
-
-# Load a snapshot
-kvs load_snapshot /path/to/snapshots/log_2025-03-19_14-30-00.txt
-# Output: Snapshot Loaded
-```
-
 ## Implementation Details
 
 ### Storage Architecture
