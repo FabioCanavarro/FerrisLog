@@ -12,7 +12,7 @@ A persistent, log-structured key-value store implemented in Rust with a friendly
 - **Network Client Support**: Operations can be called from a device to a server
 - **Core Operations**: Set, get, and remove key-value pairs with easy commands
 - **Persistence**: All operations are logged as JSON to survive program restarts
-- **Log Compaction**: Automatic compaction when log size exceeds threshold
+- **Automatic Log Compaction**: Automatic compaction when log size exceeds threshold
 - **Snapshots**: Create and load snapshots for backup and recovery
 - **Command Line Interface**: Built with `clap` for intuitive command parsing
 
@@ -32,7 +32,13 @@ cargo install --path .
 
 ## Usage
 
-### Basic Operations
+### Server
+
+```bash
+```
+
+
+### Client
 
 ```bash
 # Set a key-value pair
