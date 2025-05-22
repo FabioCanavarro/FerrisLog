@@ -51,19 +51,19 @@ kvs-server --addr 127.0.0.1:8080 --engine sled
 
 ```bash
 # Set a key-value pair
-kvs set username ferris
+kvs-client set username ferris
 # Output: Key set successfully
 
 # Get the value for a key
-kvs get username
+kvs-client get username
 # Output: ferris
 
 # Remove a key
-kvs rm username
+kvs-client rm username
 # Output: Key removed successfully
 
 # Try to get a non-existent key
-kvs get username
+kvs-client get username
 # Output: Key not found
 ```
 
