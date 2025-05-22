@@ -93,3 +93,9 @@ Ferrislog uses a log-structured storage model:
 - Multi-threaded operations for better performance
 
 - Time-to-live (TTL) for keys
+
+- Set the compaction value in kvs-address
+
+- Encryption when sending data
+
+
