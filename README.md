@@ -5,7 +5,7 @@
 
 [![Rust](https://github.com/FabioCanavarro/FerrisLog-ServerClient/actions/workflows/-rust.yml/badge.svg)](https://github.com/FabioCanavarro/FerrisLog-ServerClient/actions/workflows/-rust.yml)
 
-A persistent, log-structured key-value store implemented in Rust with a friendly CLI interface. Designed for reliability, simplicity, and educational purposes.
+A persistent, log-structured key-value store implemented in Rust with a friendly CLI interface. Designed for reliability and simplicity.
 
 ## Features
 
