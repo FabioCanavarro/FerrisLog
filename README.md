@@ -37,13 +37,13 @@ cargo install --path .
 
 ```bash
 # Setup the server in 127.0.0.1:8080
-kvs-server --address 127.0.0.1:8080
+kvs-server --addr 127.0.0.1:8080
 
 # Setup the server in 127.0.0.1:8080 with the KvEngine
-kvs-server --address 127.0.0.1:8080 --engine Kvs
+kvs-server --addr 127.0.0.1:8080 --engine Kvs
 
 # Setup the server in 127.0.0.1:8080 with Sled
-kvs-server --address 127.0.0.1:8080 --engine sled
+kvs-server --addr 127.0.0.1:8080 --engine sled
 ```
 
 
