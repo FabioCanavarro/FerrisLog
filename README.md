@@ -15,7 +15,7 @@ A persistent, log-structured key-value store implemented in Rust with a friendly
 - **Automatic Log Compaction**: Automatic compaction when log size exceeds threshold
 - **Snapshots**: Create and load snapshots for backup and recovery
 - **Command Line Interface**: Built with `clap` for intuitive command parsing
-- **Automatic Separation**: Performing without the address resulted in a folder made in your device
+- **Automatic Separation**: If the server address isn't given, the log will be saved in the local device
 
 ## Installation
 
