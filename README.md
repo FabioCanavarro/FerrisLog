@@ -1,4 +1,4 @@
-# Ferrislog-ServerClient
+# Ferrislog: A server based kvs
 
 [![Rust](https://img.shields.io/badge/Rust-1.72%2B-orange)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
