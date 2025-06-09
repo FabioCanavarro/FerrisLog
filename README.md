@@ -52,7 +52,6 @@ kvs-server --addr 127.0.0.1:8080 --engine sled
 ```bash
 # Set a key-value pair
 kvs-client --addr 127.0.0.1:8080 set username ferris
-# Output: Key set successfully
 
 # Get the value for a key
 kvs-client --addr 127.0.0.1:8080 get username
@@ -60,7 +59,6 @@ kvs-client --addr 127.0.0.1:8080 get username
 
 # Remove a key
 kvs-client --addr 127.0.0.1:8080 rm username
-# Output: Key removed successfully
 
 # Try to get a non-existent key
 kvs-client --addr 127.0.0.1:8080 get username
