@@ -1,8 +1,8 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use ferris::thread_pool::*;
-use ferris::Result;
-
+use ferris::kvstore::error::KvResult;
+pub type Result<T> = KvResult<T>;
 use crossbeam_utils::sync::WaitGroup;
 
 fn spawn_counter<P: ThreadPool>(pool: P) -> Result<()> {
