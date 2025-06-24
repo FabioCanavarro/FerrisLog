@@ -90,16 +90,20 @@ fn main() {
     // Match which engine is used
     match engine {
         Engine::Kvs => {
+            let kvstore_thread = Arc::clone(&STORE);
             for stream_wrapped in listener.incoming() {
                 let mut stream = stream_wrapped.unwrap();
-                naive_pool.spawn(|| {handle_connection(&mut stream, &LOGGER, &mut STORE)})
+                let mut store_guard = kvstore_thread.lock().unwrap();
+                naive_pool.spawn(move || {handle_connection(&mut stream, &LOGGER, &mut *store_guard)})
             }
         }
         Engine::Sled => {
+            let sled_thred = Arc::clone(&DB);
             for stream_wrapped in listener.incoming() {
                 let mut stream = stream_wrapped.unwrap();
+                let mut sled_guard = sled_thred.lock().unwrap();
                 scope(|scope| {
-                    scope.spawn(|| handle_connection(&mut stream, &logger, &mut DB));
+                    scope.spawn(move || handle_connection(&mut stream, &LOGGER, &mut *sled_guard));
                 });
             }
         }
