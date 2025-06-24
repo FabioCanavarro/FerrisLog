@@ -15,7 +15,7 @@ use tempfile::TempDir;
 // Consts
 const COMPACTION_THRESHOLD: u64 = 1024;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct KvStore {
     path: PathBuf,
     pub table: HashMap<String, u64>,

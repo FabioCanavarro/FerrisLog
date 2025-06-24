@@ -2,7 +2,7 @@ use crate::kvstore::{error::KvError, KvStore};
 use std::error::Error;
 
 // NOTE: t{command} stands for KvEngine command
-pub trait KvEngine {
+pub trait KvEngine: Clone + Send + 'static {
     fn tget(&self, key: String) -> Result<Option<String>, Box<dyn Error>>;
     fn tset(&mut self, key: String, val: String) -> Result<(), Box<dyn Error>>;
     fn tremove(&mut self, key: String) -> Result<(), Box<dyn Error>>;
