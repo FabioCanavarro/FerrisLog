@@ -10,3 +10,4 @@ extern crate slog_term;
 pub mod kv_engine;
 pub mod kvstore;
 pub mod server;
+pub mod concurrency;
