@@ -4,7 +4,7 @@ use ferris::server::engine::Engine;
 use ferris::server::handler::handle_connection;
 use slog::{info, o, Drain, Logger};
 use slog_term::PlainSyncDecorator;
-use std::{env::current_dir, io::stdout, net::TcpListener, thread::scope};
+use std::{env::current_dir, io::stdout, net::TcpListener, thread::{self, scope}};
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
