@@ -36,6 +36,23 @@ fn main() {
                 )
             )
         };
+        pub static ref DB: Arc<Mutex<Db>> = {
+            let wrapped_db = sled::open("sledlog");
+            let db = match wrapped_db {
+                Ok(db) => db,
+                Err(e) => panic!("The path cannot be accessed, Error: {}", e),
+            };
+            Arc::new(Mutex::new(db))
+        };
+
+        pub static ref STORE: Arc<Mutex<KvStore>> = {
+            let wrapped_store = KvStore::open(current_dir().unwrap().as_path());
+            let store = match wrapped_store {
+                Ok(store) => store,
+                Err(e) => panic!("The path cannot be accessed, Error: {}", e),
+            };
+            Arc::new(Mutex::new(store))
+        };
     );
 
     info!(LOGGER,
@@ -55,29 +72,6 @@ fn main() {
     // They will have seperate logs and data
 
     // Error Handling, just in case path can't be accessed
-    lazy_static!(
-        pub static ref DB: Arc<Mutex<Db>> = {
-            let wrapped_db = sled::open("sledlog");
-            let mut db = match wrapped_db {
-                Ok(db) => db,
-                Err(e) => panic!("The path cannot be accessed, Error: {}", e),
-            };
-            Arc::new(Mutex::new(db))
-        };
-    );
-    
-
-    lazy_static!(
-        pub static ref STORE: Arc<Mutex<KvStore>> = {
-            let wrapped_store = KvStore::open(current_dir().unwrap().as_path());
-            let store = match wrapped_store {
-                Ok(store) => store,
-                Err(e) => panic!("The path cannot be accessed, Error: {}", e),
-            };
-            Arc::new(Mutex::new(store))
-        };
-
-    );
 
     // Binding to the address given
     let listener = match TcpListener::bind(args.addr) {
