@@ -3,8 +3,10 @@ use ferris::concurrency::ThreadPool;
 use ferris::{concurrency::NaiveThreadPool, kvstore::KvStore};
 use ferris::server::engine::Engine;
 use ferris::server::handler::handle_connection;
+use sled::Db;
 use slog::{info, o, Drain, Logger};
 use slog_term::PlainSyncDecorator;
+use std::sync::{Arc, Mutex};
 use std::{env::current_dir, io::stdout, net::TcpListener, thread::{self, scope}};
 use lazy_static::lazy_static;
 
@@ -22,17 +24,21 @@ fn main() {
     // Parsing arguments from the cli
     let args = Args::parse();
 
-    // Structured logging with slog
-    let plain = PlainSyncDecorator::new(stdout());
-
-    let logger = Logger::root(
-        slog_term::FullFormat::new(plain).build().fuse(),
-        o!(
-            "version" => "0.1",
-        ),
+    lazy_static!(
+        static ref LOGGER: Logger  = {
+            let plain = PlainSyncDecorator::new(stdout());
+            Logger::root(
+                slog_term::FullFormat::new(plain)
+                                                .build()
+                                                .fuse(),
+                o!(
+                    "version" => "0.1",
+                )
+            )
+        };
     );
 
-    info!(logger,
+    info!(LOGGER,
         "Application started";
         "started_at" => format!("{}", args.addr),
         "Engine" => &args.engine
@@ -42,32 +48,42 @@ fn main() {
     let engine: Engine = args.engine.into();
 
     // Opening sled
-    let wrapped_db = sled::open("sledlog");
 
     // Opening KvStore
-    let wrapped_store = KvStore::open(current_dir().unwrap().as_path());
 
     // NOTE: I open both Kvstore and Sled just in case any of them is used
     // They will have seperate logs and data
 
     // Error Handling, just in case path can't be accessed
-    let mut db = match wrapped_db {
-        Ok(db) => db,
-        Err(e) => panic!("The path cannot be accessed, Error: {}", e),
-    };
+    lazy_static!(
+        pub static ref DB: Arc<Mutex<Db>> = {
+            let wrapped_db = sled::open("sledlog");
+            let mut db = match wrapped_db {
+                Ok(db) => db,
+                Err(e) => panic!("The path cannot be accessed, Error: {}", e),
+            };
+            Arc::new(Mutex::new(db))
+        };
+    );
+    
 
-    let mut store = match wrapped_store {
-        Ok(store) => store,
-        Err(e) => panic!("The path cannot be accessed, Error: {}", e),
-    };
+    lazy_static!(
+        pub static ref STORE: Arc<Mutex<KvStore>> = {
+            let wrapped_store = KvStore::open(current_dir().unwrap().as_path());
+            let store = match wrapped_store {
+                Ok(store) => store,
+                Err(e) => panic!("The path cannot be accessed, Error: {}", e),
+            };
+            Arc::new(Mutex::new(store))
+        };
 
-
+    );
 
     // Binding to the address given
     let listener = match TcpListener::bind(args.addr) {
         Ok(l) => l,
         Err(e) => {
-            info!(logger,
+            info!(LOGGER,
                 "Application Warning";
                 "Error:"  => format!("{}",e)
             );
@@ -82,14 +98,14 @@ fn main() {
         Engine::Kvs => {
             for stream_wrapped in listener.incoming() {
                 let mut stream = stream_wrapped.unwrap();
-                naive_pool.spawn(|| {handle_connection(&mut stream, &logger, &mut store)})
+                naive_pool.spawn(|| {handle_connection(&mut stream, &LOGGER, &mut STORE)})
             }
         }
         Engine::Sled => {
             for stream_wrapped in listener.incoming() {
                 let mut stream = stream_wrapped.unwrap();
                 scope(|scope| {
-                    scope.spawn(|| handle_connection(&mut stream, &logger, &mut db));
+                    scope.spawn(|| handle_connection(&mut stream, &logger, &mut DB));
                 });
             }
         }
