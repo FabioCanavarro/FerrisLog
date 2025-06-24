@@ -452,6 +452,7 @@ dependencies = [
  "clap 4.5.32",
  "criterion",
  "crossbeam-utils 0.6.6",
+ "lazy_static",
  "panic-control",
  "predicates",
  "rand",

@@ -1,10 +1,12 @@
 use clap::Parser;
-use ferris::kvstore::KvStore;
+use ferris::concurrency::ThreadPool;
+use ferris::{concurrency::NaiveThreadPool, kvstore::KvStore};
 use ferris::server::engine::Engine;
 use ferris::server::handler::handle_connection;
 use slog::{info, o, Drain, Logger};
 use slog_term::PlainSyncDecorator;
 use std::{env::current_dir, io::stdout, net::TcpListener, thread::{self, scope}};
+use lazy_static::lazy_static;
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
@@ -73,14 +75,14 @@ fn main() {
         }
     };
 
+    let naive_pool = NaiveThreadPool::new(4).expect("Failed to create NaiveThreadPool");
+
     // Match which engine is used
     match engine {
         Engine::Kvs => {
             for stream_wrapped in listener.incoming() {
                 let mut stream = stream_wrapped.unwrap();
-                scope(|scope| {
-                    scope.spawn(|| handle_connection(&mut stream, &logger, &mut store));
-                });
+                naive_pool.spawn(|| {handle_connection(&mut stream, &logger, &mut store)})
             }
         }
         Engine::Sled => {

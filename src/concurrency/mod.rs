@@ -1,11 +1,11 @@
-use std::thread;
+use std::{env::Args, thread};
 
 use crate::kvstore::error::KvResult;
 
 pub trait ThreadPool{
     fn new(n:i32) -> KvResult<Self>
     where Self : Sized;
-    fn spawn<T: FnOnce() + Send> (&self, f: T);
+    fn spawn<T: FnOnce() + Send + 'static> (&self, f: T);
 } 
 
 #[derive(Debug)]
@@ -27,11 +27,9 @@ impl ThreadPool for NaiveThreadPool {
         Ok(NaiveThreadPool {})
     }
 
-    fn spawn<T: FnOnce() + Send> (&self, f: T) {
+    fn spawn<T: FnOnce() + Send + 'static> (&self, f: T) {
         thread::scope(|scope| {
-            scope.spawn(||{
-                f()
-            });
+            scope.spawn(f);
         });
     }
 }
