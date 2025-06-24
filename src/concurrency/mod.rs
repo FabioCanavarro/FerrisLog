@@ -27,7 +27,7 @@ impl ThreadPool for NaiveThreadPool {
         todo!()
     }
 
-    fn spawn<T> (&self, f: T) -> KvResult<()> {
+    fn spawn<T> (&self, f: T) {
         todo!()
     }
 }
@@ -37,7 +37,7 @@ impl ThreadPool for SharedQueueThreadPool {
         todo!()
     }
 
-    fn spawn<T> (&self, f: T) -> KvResult<()> {
+    fn spawn<T> (&self, f: T) {
         todo!()
     }
 }
@@ -47,7 +47,7 @@ impl ThreadPool for RayonThreadPool {
         todo!()
     }
 
-    fn spawn<T> (&self, f: T) -> KvResult<()> {
+    fn spawn<T> (&self, f: T) {
         todo!()
     }
 }
