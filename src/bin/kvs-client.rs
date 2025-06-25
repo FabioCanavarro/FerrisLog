@@ -46,7 +46,7 @@ fn main() {
     let mut stream = match TcpStream::connect(&cli.addr) {
         Ok(stream) => stream,
         Err(e) => {
-            panic!("{}", e);
+            panic!("ERROR: {}", e);
         }
     };
 

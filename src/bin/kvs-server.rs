@@ -1,10 +1,14 @@
 use clap::Parser;
-use ferris::kvstore::KvStore;
+use ferris::concurrency::ThreadPool;
+use ferris::{concurrency::NaiveThreadPool, kvstore::KvStore};
 use ferris::server::engine::Engine;
 use ferris::server::handler::handle_connection;
+use sled::Db;
 use slog::{info, o, Drain, Logger};
 use slog_term::PlainSyncDecorator;
-use std::{env::current_dir, io::stdout, net::TcpListener, thread::scope};
+use std::sync::{Arc, Mutex};
+use std::{env::current_dir, io::stdout, net::TcpListener, thread::{self, scope}};
+use lazy_static::lazy_static;
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
@@ -20,17 +24,38 @@ fn main() {
     // Parsing arguments from the cli
     let args = Args::parse();
 
-    // Structured logging with slog
-    let plain = PlainSyncDecorator::new(stdout());
+    lazy_static!(
+        static ref LOGGER: Logger  = {
+            let plain = PlainSyncDecorator::new(stdout());
+            Logger::root(
+                slog_term::FullFormat::new(plain)
+                                                .build()
+                                                .fuse(),
+                o!(
+                    "version" => "0.1",
+                )
+            )
+        };
+        pub static ref DB: Arc<Mutex<Db>> = {
+            let wrapped_db = sled::open("sledlog");
+            let db = match wrapped_db {
+                Ok(db) => db,
+                Err(e) => panic!("The path cannot be accessed, Error: {}", e),
+            };
+            Arc::new(Mutex::new(db))
+        };
 
-    let logger = Logger::root(
-        slog_term::FullFormat::new(plain).build().fuse(),
-        o!(
-            "version" => "0.1",
-        ),
+        pub static ref STORE: Arc<Mutex<KvStore>> = {
+            let wrapped_store = KvStore::open(current_dir().unwrap().as_path());
+            let store = match wrapped_store {
+                Ok(store) => store,
+                Err(e) => panic!("The path cannot be accessed, Error: {}", e),
+            };
+            Arc::new(Mutex::new(store))
+        };
     );
 
-    info!(logger,
+    info!(LOGGER,
         "Application started";
         "started_at" => format!("{}", args.addr),
         "Engine" => &args.engine
@@ -40,32 +65,19 @@ fn main() {
     let engine: Engine = args.engine.into();
 
     // Opening sled
-    let wrapped_db = sled::open("sledlog");
 
     // Opening KvStore
-    let wrapped_store = KvStore::open(current_dir().unwrap().as_path());
 
     // NOTE: I open both Kvstore and Sled just in case any of them is used
     // They will have seperate logs and data
 
     // Error Handling, just in case path can't be accessed
-    let mut db = match wrapped_db {
-        Ok(db) => db,
-        Err(e) => panic!("The path cannot be accessed, Error: {}", e),
-    };
-
-    let mut store = match wrapped_store {
-        Ok(store) => store,
-        Err(e) => panic!("The path cannot be accessed, Error: {}", e),
-    };
-
-
 
     // Binding to the address given
     let listener = match TcpListener::bind(args.addr) {
         Ok(l) => l,
         Err(e) => {
-            info!(logger,
+            info!(LOGGER,
                 "Application Warning";
                 "Error:"  => format!("{}",e)
             );
@@ -73,21 +85,27 @@ fn main() {
         }
     };
 
+    let naive_pool = NaiveThreadPool::new(4).expect("Failed to create NaiveThreadPool");
+
     // Match which engine is used
     match engine {
         Engine::Kvs => {
             for stream_wrapped in listener.incoming() {
                 let mut stream = stream_wrapped.unwrap();
-                scope(|scope| {
-                    scope.spawn(|| handle_connection(&mut stream, &logger, &mut store));
-                });
+                naive_pool.spawn(move || {
+                    let kvstore_thread = Arc::clone(&STORE);
+                    let mut store_guard = kvstore_thread.lock().unwrap();
+                    handle_connection(&mut stream, &LOGGER, &mut *store_guard)
+                })
             }
         }
         Engine::Sled => {
             for stream_wrapped in listener.incoming() {
                 let mut stream = stream_wrapped.unwrap();
-                scope(|scope| {
-                    scope.spawn(|| handle_connection(&mut stream, &logger, &mut db));
+                naive_pool.spawn(move|| {
+                    let sled_thred = Arc::clone(&DB);
+                    let mut sled_guard = sled_thred.lock().unwrap();
+                    handle_connection(&mut stream, &LOGGER, &mut *sled_guard)
                 });
             }
         }
