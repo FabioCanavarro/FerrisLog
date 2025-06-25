@@ -28,9 +28,7 @@ impl ThreadPool for NaiveThreadPool {
     }
 
     fn spawn<T: FnOnce() + Send + 'static> (&self, f: T) {
-        thread::scope(|scope| {
-            scope.spawn(f);
-        });
+        thread::spawn(f);
     }
 }
 
