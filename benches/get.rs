@@ -13,12 +13,13 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         |b| b.iter_batched(
                 || {
                     let temp_dir = TempDir::new().unwrap();
-                    let store = KvStore::open(temp_dir.path()).unwrap();
+                    let mut store = KvStore::open(temp_dir.path()).unwrap();
+                    store.set(key.clone(),value.clone()).unwrap();
                     (store,temp_dir)
                 },
                 //NOTE: I kept tempdir, because, they keep dropping it after the setup finish which
                 //cause it fo fail, cuz tempdir is dropped
-                |(mut store, _tempdir)| store.set(black_box(key.clone()), black_box(value.clone())).unwrap(),
+                |(store, _tempdir)| store.get(black_box(key.clone())),
                 criterion::BatchSize::SmallInput
         )
     );
