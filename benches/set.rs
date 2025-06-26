@@ -33,13 +33,24 @@ pub fn single_set_benchmark(c: &mut Criterion) {
 }
 
 pub fn multi_set_benchmark(c: &mut Criterion) {
+    let data = multi_fake_data();
     c.bench_function("100 Set Random",
         |b| b.iter_batched(
-            setup,
-            routine,
-            size)
+            || {
+                let temp_dir = TempDir::new().unwrap();
+                let store = KvStore::open(temp_dir.path()).unwrap();
+                (store,temp_dir)
+            },
+            |(mut store, _tempdir)| {
+                data.iter().map(move |x| store.set(black_box(x.0.clone()), black_box(x.1.clone())).unwrap() )
+            },
+            criterion::BatchSize::SmallInput
+        )
     );
 }
 
-criterion_group!(set_benches, single_set_benchmark);
+criterion_group!(set_benches,
+    single_set_benchmark,
+    multi_set_benchmark
+);
 criterion_main!(set_benches);
