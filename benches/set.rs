@@ -7,7 +7,7 @@ fn fake_data() -> (String,String){
 }
 
 
-pub fn criterion_benchmark(c: &mut Criterion) {
+pub fn single_set_benchmark(c: &mut Criterion) {
     let (key, value) = fake_data();
     c.bench_function("Set random", 
         |b| b.iter_batched(
@@ -24,65 +24,6 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     );
 }
 
-criterion_group!(benches, criterion_benchmark);
-criterion_main!(benches);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+criterion_group!(set_benches, single_set_benchmark);
+criterion_main!(set_benches);
