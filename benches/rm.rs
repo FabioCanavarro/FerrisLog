@@ -9,7 +9,7 @@ fn fake_data() -> (String,String){
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     let (key, value) = fake_data();
-    c.bench_function("Set random", 
+    c.bench_function("Remove random", 
         |b| b.iter_batched(
                 || {
                     let temp_dir = TempDir::new().unwrap();
