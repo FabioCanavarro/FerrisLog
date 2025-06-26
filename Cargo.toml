@@ -40,3 +40,6 @@ path = "src/bin/kvs-server.rs"
 name = "kvs"
 path = "src/bin/kvs.rs"
 
+[[bench]]
+name = "benches"
+harness = false
