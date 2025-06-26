@@ -6,6 +6,14 @@ fn fake_data() -> (String,String){
     (rand::random::<i32>().to_string(),rand::random::<i32>().to_string())
 }
 
+fn multi_fake_data() -> Vec<(String,String)> {
+    let mut r = Vec::with_capacity(100);
+    for _ in 1..100 {
+        r.push(fake_data());
+    }
+    r
+}
+
 
 pub fn single_set_benchmark(c: &mut Criterion) {
     let (key, value) = fake_data();
@@ -24,6 +32,14 @@ pub fn single_set_benchmark(c: &mut Criterion) {
     );
 }
 
+pub fn multi_set_benchmark(c: &mut Criterion) {
+    c.bench_function("100 Set Random",
+        |b| b.iter_batched(
+            setup,
+            routine,
+            size)
+    );
+}
 
 criterion_group!(set_benches, single_set_benchmark);
 criterion_main!(set_benches);
