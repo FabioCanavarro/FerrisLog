@@ -41,5 +41,15 @@ name = "kvs"
 path = "src/bin/kvs.rs"
 
 [[bench]]
-name = "benches"
+name = "set"
+harness = false
+
+
+[[bench]]
+name = "rm"
+harness = false
+
+
+[[bench]]
+name = "get"
 harness = false
