@@ -26,7 +26,7 @@ pub fn single_set_benchmark(c: &mut Criterion) {
                 },
                 //NOTE: I kept tempdir, because, they keep dropping it after the setup finish which
                 //cause it fo fail, cuz tempdir is dropped
-                |(mut store, _tempdir)| store.set(black_box(key.clone()), black_box(value.clone())).unwrap(),
+                |(mut store, _tempdir)| store.set(black_box(key.clone()), black_box(value.clone())),
                 criterion::BatchSize::SmallInput
         )
     );
@@ -43,7 +43,7 @@ pub fn multi_set_benchmark(c: &mut Criterion) {
             },
             |(mut store, _tempdir)| {
                 for item in &data {
-                    store.set(black_box(item.0.clone()), black_box(item.1.clone())).unwrap();
+                    let _ = store.set(black_box(item.0.clone()), black_box(item.1.clone()));
                 }
             },
             criterion::BatchSize::LargeInput

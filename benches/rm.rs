@@ -8,7 +8,7 @@ fn fake_data() -> (String,String){
 
 fn multi_fake_data() -> Vec<(String,String)> {
     let mut r = Vec::with_capacity(100);
-    for _ in 1..100 {
+    for _ in 0..100 {
         r.push(fake_data());
     }
     r
@@ -32,6 +32,33 @@ pub fn single_remove_benchmark(c: &mut Criterion) {
     );
 }
 
-criterion_group!(remove_benches, single_remove_benchmark);
+
+pub fn multi_remove_benchmark(c: &mut Criterion) {
+    let data = multi_fake_data();
+    c.bench_function("100 Random Remove Operation",
+        |b| b.iter_batched(
+            || {
+                let temp_dir = TempDir::new().unwrap();
+                let mut store = KvStore::open(temp_dir.path()).unwrap();
+                for item in &data {
+                    store.set(black_box(item.0.clone()), black_box(item.1.clone())).unwrap();
+                }
+                (store,temp_dir)
+            },
+            |(mut store, _tempdir)| {
+                for item in &data {
+                    let _ = store.remove(black_box(item.0.clone()));
+                }
+            },
+            criterion::BatchSize::LargeInput
+        )
+    );
+}
+
+criterion_group!(
+    remove_benches, 
+    single_remove_benchmark,
+    multi_remove_benchmark
+);
 criterion_main!(remove_benches);
 
