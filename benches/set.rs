@@ -8,7 +8,7 @@ fn fake_data() -> (String,String){
 
 fn multi_fake_data() -> Vec<(String,String)> {
     let mut r = Vec::with_capacity(100);
-    for _ in 1..100 {
+    for _ in 0..100 {
         r.push(fake_data());
     }
     r
@@ -42,9 +42,11 @@ pub fn multi_set_benchmark(c: &mut Criterion) {
                 (store,temp_dir)
             },
             |(mut store, _tempdir)| {
-                data.iter().map(move |x| store.set(black_box(x.0.clone()), black_box(x.1.clone())).unwrap()).collect::<Vec<_>>()
+                for item in &data {
+                    store.set(black_box(item.0.clone()), black_box(item.1.clone())).unwrap();
+                }
             },
-            criterion::BatchSize::NumIterations(100)
+            criterion::BatchSize::LargeInput
         )
     );
 }

@@ -6,6 +6,13 @@ fn fake_data() -> (String,String){
     (rand::random::<i32>().to_string(),rand::random::<i32>().to_string())
 }
 
+fn multi_fake_data() -> Vec<(String,String)> {
+    let mut r = Vec::with_capacity(100);
+    for _ in 1..100 {
+        r.push(fake_data());
+    }
+    r
+}
 
 pub fn single_remove_benchmark(c: &mut Criterion) {
     let (key, value) = fake_data();
