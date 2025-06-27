@@ -7,7 +7,7 @@ use sled::Db;
 use slog::{info, o, Drain, Logger};
 use slog_term::PlainSyncDecorator;
 use std::sync::{Arc, Mutex};
-use std::{env::current_dir, io::stdout, net::TcpListener, thread::{self, scope}};
+use std::{env::current_dir, io::stdout, net::TcpListener};
 use lazy_static::lazy_static;
 
 #[derive(Parser, Debug)]

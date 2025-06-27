@@ -13,7 +13,7 @@ use error::{KvError, KvResult};
 use tempfile::TempDir;
 
 // Consts
-const COMPACTION_THRESHOLD: u64 = 1024;
+const COMPACTION_THRESHOLD: u64 = 1000000000000000000;
 
 #[derive(Debug, Clone)]
 pub struct KvStore {
