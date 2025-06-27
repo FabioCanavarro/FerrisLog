@@ -17,7 +17,7 @@ fn multi_fake_data() -> Vec<(String,String)> {
 
 pub fn single_set_benchmark(c: &mut Criterion) {
     let (key, value) = fake_data();
-    c.bench_function("Set random", 
+    c.bench_function("Single Random Set Operation", 
         |b| b.iter_batched(
                 || {
                     let temp_dir = TempDir::new().unwrap();
@@ -34,7 +34,7 @@ pub fn single_set_benchmark(c: &mut Criterion) {
 
 pub fn multi_set_benchmark(c: &mut Criterion) {
     let data = multi_fake_data();
-    c.bench_function("100 Set Random",
+    c.bench_function("100 Random Set Operation",
         |b| b.iter_batched(
             || {
                 let temp_dir = TempDir::new().unwrap();
@@ -42,9 +42,9 @@ pub fn multi_set_benchmark(c: &mut Criterion) {
                 (store,temp_dir)
             },
             |(mut store, _tempdir)| {
-                data.iter().map(move |x| store.set(black_box(x.0.clone()), black_box(x.1.clone())).unwrap() )
+                data.iter().map(move |x| store.set(black_box(x.0.clone()), black_box(x.1.clone())).unwrap()).collect::<Vec<_>>()
             },
-            criterion::BatchSize::SmallInput
+            criterion::BatchSize::NumIterations(100)
         )
     );
 }
