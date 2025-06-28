@@ -1,6 +1,6 @@
-use std::{env::Args, thread};
-
+use std::thread;
 use crate::kvstore::error::KvResult;
+pub mod naive;
 
 pub trait ThreadPool{
     fn new(n:i32) -> KvResult<Self>
@@ -12,10 +12,7 @@ pub trait ThreadPool{
 pub struct NaiveThreadPool{
 }
 
-#[derive(Debug)]
-pub struct SharedQueueThreadPool{
 
-}
 
 #[derive( Debug)]
 pub struct RayonThreadPool{
@@ -32,15 +29,6 @@ impl ThreadPool for NaiveThreadPool {
     }
 }
 
-impl ThreadPool for SharedQueueThreadPool {
-    fn new (n: i32) -> KvResult<SharedQueueThreadPool> {
-        todo!()
-    }
-
-    fn spawn<T> (&self, f: T) {
-        todo!()
-    }
-}
 
 impl ThreadPool for RayonThreadPool {
     fn new (n: i32) -> KvResult<RayonThreadPool> {
@@ -51,3 +39,4 @@ impl ThreadPool for RayonThreadPool {
         todo!()
     }
 }
+
