@@ -1,16 +1,16 @@
-use std::{clone, env::Args, fmt::Debug, sync::{mpsc::{Receiver, Sender}, Arc, Mutex}, thread::{self, JoinHandle}};
+use std::{clone, env::Args, fmt::Debug, sync::{mpsc::{self, channel, Receiver, Sender}, Arc, Mutex}, thread::{self, JoinHandle}};
 use crate::kvstore::error::KvResult;
 
 use super::ThreadPool;
 
 #[derive(Debug)]
 struct Worker<T>{
-    thread: Option<JoinHandle<T>>
+    thread: JoinHandle<T>
     
 }
 
 impl<T: Send + 'static> Worker<T> {
-    fn spawn<F: FnOnce() + Send + 'static>(&mut self, rx: Arc<Mutex<Receiver<F>>>) {
+    pub fn spawn<F: FnOnce() + Send + 'static>(rx: Arc<Mutex<Receiver<F>>>) -> Worker<T>{
         let handle = thread::spawn(
             move|| {
                 loop {
@@ -19,7 +19,7 @@ impl<T: Send + 'static> Worker<T> {
                 }
             }
         );
-        self.thread = Some(handle);
+        Worker { thread: handle }
     }
 }
 
@@ -33,7 +33,15 @@ pub struct SharedQueueThreadPool<T,F: Send + FnOnce() + 'static> {
 
 impl<T,F: FnOnce() + Send + 'static> ThreadPool for SharedQueueThreadPool<T, F> {
     fn new (n: i32) -> KvResult<SharedQueueThreadPool<T,F>> {
-        todo!()
+        let workers = vec![];
+        let (sx, rx) = channel();
+        let rx = Arc::new(Mutex::new(rx));
+        for i in 0..n {
+            workers.push(
+                Worker::spawn(rx.clone())
+            );
+        }
+
     }
 
     fn spawn<Y> (&self, f: Y) {
