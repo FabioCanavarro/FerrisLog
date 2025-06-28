@@ -1,7 +1,4 @@
-use std::{clone, sync::{mpsc::Receiver, Arc, Mutex}, thread::{self, JoinHandle}};
-
-use crossbeam_utils::thread;
-
+use std::{clone, env::Args, sync::{mpsc::Receiver, Arc, Mutex}, thread::{self, JoinHandle}};
 use crate::kvstore::error::KvResult;
 
 use super::ThreadPool;
@@ -11,16 +8,17 @@ struct Worker<T>{
     
 }
 
-impl Worker<T> {
-    fn spawn(&self, rx: Arc<Mutex<Receiver<()>>>) {
+impl<T: Send + 'static> Worker<T> {
+    fn spawn<f: FnOnce() + Send + 'static>(&mut self, rx: Arc<Mutex<Receiver<f>>>) {
         let handle = thread::spawn(
-            || {
+            move|| {
                 loop {
-                    let f = rx.clone().lock();
+                    let f = rx.lock().unwrap().recv().unwrap();
+                    f()
                 }
             }
         );
-        &self.thread = Some(handle);
+        self.thread = Some(handle);
     }
 }
 

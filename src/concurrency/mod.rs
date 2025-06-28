@@ -1,7 +1,7 @@
-use std::thread;
+use std::{env::Args, thread};
+
 use crate::kvstore::error::KvResult;
 pub mod naive;
-
 pub trait ThreadPool{
     fn new(n:i32) -> KvResult<Self>
     where Self : Sized;
