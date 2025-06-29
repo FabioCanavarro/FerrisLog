@@ -2,10 +2,10 @@ use std::{env::Args, thread};
 
 use crate::kvstore::error::KvResult;
 pub mod naive;
-pub trait ThreadPool{
+pub trait ThreadPool<F>{
     fn new(n:i32) -> KvResult<Self>
     where Self : Sized;
-    fn spawn<T: FnOnce() + Send + 'static> (&self, f: T);
+    fn spawn(&self, f: F);
 } 
 
 #[derive(Debug)]
@@ -19,23 +19,23 @@ pub struct RayonThreadPool{
 
 }
 
-impl ThreadPool for NaiveThreadPool {
+impl<F: Send + 'static + FnOnce()> ThreadPool<F> for NaiveThreadPool {
     fn new (_: i32) -> KvResult<NaiveThreadPool> {
         Ok(NaiveThreadPool {})
     }
 
-    fn spawn<T: FnOnce() + Send + 'static> (&self, f: T) {
+    fn spawn<T: FnOnce() + Send + 'static> (&mut self, f: T) {
         thread::spawn(f);
     }
 }
 
 
-impl ThreadPool for RayonThreadPool {
+impl<F: Send + 'static + FnOnce()> ThreadPool<F> for RayonThreadPool {
     fn new (n: i32) -> KvResult<RayonThreadPool> {
         todo!()
     }
 
-    fn spawn<T> (&self, f: T) {
+    fn spawn<T> (&mut self, f: T) {
         todo!()
     }
 }

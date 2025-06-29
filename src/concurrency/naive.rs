@@ -26,12 +26,11 @@ impl<T: Send + 'static> Worker<T> {
 #[derive(Debug)]
 pub struct SharedQueueThreadPool<T,F: Send + FnOnce() + 'static> {
     workers: Vec<Worker<T>>,
-    jobs: Vec<F>,
     channel: (Sender<F>, Arc<Mutex<Receiver<F>>>)
 
 }
 
-impl<T: Send + 'static, F: FnOnce() + Send + 'static> ThreadPool for SharedQueueThreadPool<T, F> {
+impl<T: Send + 'static, F: FnOnce() + Send + 'static> ThreadPool<F> for SharedQueueThreadPool<T, F> {
     fn new (n: i32) -> KvResult<SharedQueueThreadPool<T,F>> {
         let mut workers = vec![];
         let (sx, rx) = channel();
@@ -44,14 +43,13 @@ impl<T: Send + 'static, F: FnOnce() + Send + 'static> ThreadPool for SharedQueue
         Ok(
             SharedQueueThreadPool { 
                 workers,
-                jobs: Vec::new(),
                 channel: (sx, rx)
             }
         )
 
     }
 
-    fn spawn<Y> (&self, f: Y) {
-        todo!()
+    fn spawn(&self, f: F){
+        self.channel.0.send(f);
     }
 }
