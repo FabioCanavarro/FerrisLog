@@ -29,14 +29,14 @@ impl Worker {
 }
 
 #[derive(Debug)]
-pub struct SharedQueueThreadPool<F: Send + FnOnce() + 'static> {
+pub struct SharedQueueThreadPool {
     workers: Vec<Worker>,
-    channel: (Sender<F>, Arc<Mutex<Receiver<F>>>)
+    channel: (Sender<Box<dyn FnOnce() + 'static + Send>>, Arc<Mutex<Receiver<Box<dyn FnOnce() + 'static + Send>>>>)
 
 }
 
-impl<F: FnOnce() + Send + 'static> ThreadPool<F> for SharedQueueThreadPool<F> {
-    fn new (n: i32) -> KvResult<SharedQueueThreadPool<F>> {
+impl ThreadPool for SharedQueueThreadPool {
+    fn new (n: i32) -> KvResult<SharedQueueThreadPool> {
         let mut workers = vec![];
         let (sx, rx) = channel();
         let rx = Arc::new(Mutex::new(rx));
@@ -54,12 +54,12 @@ impl<F: FnOnce() + Send + 'static> ThreadPool<F> for SharedQueueThreadPool<F> {
 
     }
 
-    fn spawn(&self, f: F){
-        let _ = self.channel.0.send(f);
+    fn spawn<F: Send + 'static + FnOnce()> (&self, f: F){
+        let _ = self.channel.0.send(Box::new(f));
     }
 }
 
-impl<F: 'static + Send + FnOnce()> Drop for SharedQueueThreadPool<F> {
+impl Drop for SharedQueueThreadPool {
     fn drop(&mut self) {
         for i in &mut self.workers {
             let _ = i.thread.take().unwrap().join();
