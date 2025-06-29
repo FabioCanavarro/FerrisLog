@@ -43,6 +43,12 @@ pub struct SharedQueueThreadPool {
     *   stuck just waiting for the receiver
     */
     sx: Sender<Box<dyn FnOnce() + 'static + Send>>,
+    analyzer_thread: Option<JoinHandle<()>>
+    /* NOTE:
+    *   Found the solution, what if we have another thread that checks the field of the thread, if
+    *   they died, then we join and spawn a new one?
+    * 
+    */
 }
 
 impl ThreadPool for SharedQueueThreadPool {
@@ -53,9 +59,15 @@ impl ThreadPool for SharedQueueThreadPool {
         for _ in 0..n {
             workers.push(Worker::spawn(rx.clone()));
         }
+        let thread = thread::spawn(
+            || {
+                todo!()
+            }
+        );
         Ok(SharedQueueThreadPool {
             workers,
             sx,
+            analyzer_thread: Some(thread)
         })
     }
 
@@ -73,6 +85,7 @@ impl Drop for SharedQueueThreadPool {
                     Err(e) =>  println!("{:?}",e),
             }
         }
+        self.analyzer_thread.take().unwrap().join().unwrap();
     }
 }
 
