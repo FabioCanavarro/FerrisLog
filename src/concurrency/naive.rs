@@ -8,6 +8,25 @@ use std::{
 use super::ThreadPool;
 
 #[derive(Debug)]
+pub struct SharedQueueThreadPool {
+    workers: Vec<Worker>,
+    /* NOTE:
+    *   The rust drop methods drops the fields first before our implementation so, which means that
+    *   the receiver will be dropped first (old field is (sender,receiver) ), then the thread, but
+    *   the thread.join() means to finish its current task then to terminate the thread, but
+    *   the thread is accessing invalidated memory, receiver, which was dropped, so the thread is
+    *   stuck just waiting for the receiver
+    */
+    sx: Sender<Box<dyn FnOnce() + 'static + Send + UnwindSafe>>,
+    analyzer_thread: Option<JoinHandle<()>>
+    /* NOTE:
+    *   Found the solution, what if we have another thread that checks the field of the thread, if
+    *   they died, then we join and spawn a new one, that would require each thread to have be able
+    *   to mutate their fields, so we use Arc<>, arc is also concurrency safe
+    */
+}
+
+#[derive(Debug)]
 struct Worker {
     // NOTE: The reason why we use Option, is so that we can take ownership, in the drop method,
     // without it we can't
@@ -42,25 +61,6 @@ impl Worker {
             dead
         }
     }
-}
-
-#[derive(Debug)]
-pub struct SharedQueueThreadPool {
-    workers: Vec<Worker>,
-    /* NOTE:
-    *   The rust drop methods drops the fields first before our implementation so, which means that
-    *   the receiver will be dropped first (old field is (sender,receiver) ), then the thread, but
-    *   the thread.join() means to finish its current task then to terminate the thread, but
-    *   the thread is accessing invalidated memory, receiver, which was dropped, so the thread is
-    *   stuck just waiting for the receiver
-    */
-    sx: Sender<Box<dyn FnOnce() + 'static + Send + UnwindSafe>>,
-    analyzer_thread: Option<JoinHandle<()>>
-    /* NOTE:
-    *   Found the solution, what if we have another thread that checks the field of the thread, if
-    *   they died, then we join and spawn a new one?
-    * 
-    */
 }
 
 impl ThreadPool for SharedQueueThreadPool {
