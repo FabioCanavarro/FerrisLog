@@ -35,6 +35,13 @@ impl Worker {
 #[derive(Debug)]
 pub struct SharedQueueThreadPool {
     workers: Vec<Worker>,
+    /* NOTE:
+    *   The rust drop methods drops the fields first before our implementation so, which means that
+    *   the receiver will be dropped first (old field is (sender,receiver) ), then the thread, but
+    *   the thread.join() means to finish its current task then to terminate the thread, but
+    *   the thread is accessing invalidated memory, receiver, which was dropped, so the thread is
+    *   stuck just waiting for the receiver
+    */
     sx: Sender<Box<dyn FnOnce() + 'static + Send>>,
 }
 
