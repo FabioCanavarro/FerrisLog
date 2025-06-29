@@ -1,11 +1,9 @@
 use crate::kvstore::error::KvResult;
 use std::{
-    fmt::Debug,
-    sync::{
+    fmt::Debug, panic::{catch_unwind, UnwindSafe}, sync::{
         mpsc::{channel, Receiver, Sender},
         Arc, Mutex,
-    },
-    thread::{self, JoinHandle},
+    }, thread::{self, JoinHandle}
 };
 
 use super::ThreadPool;
@@ -18,11 +16,17 @@ struct Worker {
 }
 
 impl Worker {
-    pub fn spawn<F: FnOnce() + Send + 'static>(rx: Arc<Mutex<Receiver<F>>>) -> Worker {
+    pub fn spawn<F: FnOnce() + Send + 'static + UnwindSafe>(rx: Arc<Mutex<Receiver<F>>>) -> Worker {
         let handle = thread::spawn(move || loop {
             let msg = rx.lock().unwrap().recv();
             match msg {
-                Ok(f) => f(),
+                Ok(f) => {
+                    let result = catch_unwind(
+                        move|| {
+                            f()
+                        }
+                    );
+                },
                 Err(_) => break,
             }
         });
@@ -42,7 +46,7 @@ pub struct SharedQueueThreadPool {
     *   the thread is accessing invalidated memory, receiver, which was dropped, so the thread is
     *   stuck just waiting for the receiver
     */
-    sx: Sender<Box<dyn FnOnce() + 'static + Send>>,
+    sx: Sender<Box<dyn FnOnce() + 'static + Send + UnwindSafe>>,
     analyzer_thread: Option<JoinHandle<()>>
     /* NOTE:
     *   Found the solution, what if we have another thread that checks the field of the thread, if
