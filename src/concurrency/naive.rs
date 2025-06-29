@@ -1,8 +1,7 @@
 use crate::kvstore::error::KvResult;
 use std::{
-    fmt::Debug, panic::{catch_unwind, UnwindSafe}, sync::{
-        mpsc::{channel, Receiver, Sender},
-        Arc, Mutex,
+    fmt::Debug, panic::{catch_unwind, UnwindSafe}, result, sync::{
+        atomic::AtomicBool, mpsc::{channel, Receiver, Sender}, Arc, Mutex
     }, thread::{self, JoinHandle}
 };
 
@@ -13,25 +12,34 @@ struct Worker {
     // NOTE: The reason why we use Option, is so that we can take ownership, in the drop method,
     // without it we can't
     thread: Option<JoinHandle<()>>,
+    dead: Arc<AtomicBool>
 }
 
 impl Worker {
     pub fn spawn<F: FnOnce() + Send + 'static + UnwindSafe>(rx: Arc<Mutex<Receiver<F>>>) -> Worker {
-        let handle = thread::spawn(move || loop {
-            let msg = rx.lock().unwrap().recv();
-            match msg {
-                Ok(f) => {
-                    let result = catch_unwind(
-                        move|| {
-                            f()
+        let dead = Arc::new(AtomicBool::new(false));
+        let dead_clone: Arc<AtomicBool> = Arc::clone(&dead);
+        let handle = thread::spawn(
+            move || loop {
+                let msg = rx.lock().unwrap().recv();
+                match msg {
+                    Ok(f) => {
+                        let result = catch_unwind(
+                            move|| {
+                                f()
+                            }
+                        );
+                        if let Err(_) = result { 
+                            dead_clone.clone().store(true, std::sync::atomic::Ordering::SeqCst);
                         }
-                    );
-                },
-                Err(_) => break,
+                    },
+                    Err(_) => break,
+                }
             }
-        });
+        );
         Worker {
             thread: Some(handle),
+            dead
         }
     }
 }
