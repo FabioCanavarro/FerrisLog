@@ -25,7 +25,7 @@ fn main() {
     let args = Args::parse();
 
     lazy_static! {
-        static ref LOGGER: Logger = {
+        pub static ref LOGGER: Logger = {
             let plain = PlainSyncDecorator::new(stdout());
             Logger::root(
                 slog_term::FullFormat::new(plain).build().fuse(),

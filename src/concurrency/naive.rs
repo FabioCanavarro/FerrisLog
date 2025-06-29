@@ -55,7 +55,7 @@ impl ThreadPool for SharedQueueThreadPool {
         }
         Ok(SharedQueueThreadPool {
             workers,
-            sx
+            sx,
         })
     }
 
@@ -67,7 +67,11 @@ impl ThreadPool for SharedQueueThreadPool {
 impl Drop for SharedQueueThreadPool {
     fn drop(&mut self) {
         for i in &mut self.workers {
-            let _ = i.thread.take().unwrap().join();
+            let thread = i.thread.take().unwrap().join();
+            match thread {
+                    Ok(t) => (),
+                    Err(e) =>  println!("{:?}",e),
+            }
         }
     }
 }
