@@ -71,3 +71,10 @@ impl Drop for SharedQueueThreadPool {
         }
     }
 }
+
+/* WARNING:
+*   The reason why the panic test is failing is because, they made all the threads panic and want
+*   to see how well can we manage panics, so our job is to find the panic or dead threads and
+*   .join() them and replace them with new ones
+*
+*/
