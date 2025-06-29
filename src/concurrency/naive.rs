@@ -1,60 +1,61 @@
-use std::{fmt::Debug, sync::{mpsc::{channel, Receiver, Sender}, Arc, Mutex}, thread::{self, JoinHandle}};
 use crate::kvstore::error::KvResult;
+use std::{
+    fmt::Debug,
+    sync::{
+        mpsc::{channel, Receiver, Sender},
+        Arc, Mutex,
+    },
+    thread::{self, JoinHandle},
+};
 
 use super::ThreadPool;
 
 #[derive(Debug)]
-struct Worker{
+struct Worker {
     // NOTE: The reason why we use Option, is so that we can take ownership, in the drop method,
     // without it we can't
-    thread: Option<JoinHandle<()>>
-    
+    thread: Option<JoinHandle<()>>,
 }
 
 impl Worker {
-    pub fn spawn<F: FnOnce() + Send + 'static>(rx: Arc<Mutex<Receiver<F>>>) -> Worker{
-        let handle = thread::spawn(
-            move|| {
-                loop {
-                    let msg = rx.lock().unwrap().recv();
-                    match msg {
-                        Ok(f) => f(),
-                        Err(_) => break
-                    }
-                }
+    pub fn spawn<F: FnOnce() + Send + 'static>(rx: Arc<Mutex<Receiver<F>>>) -> Worker {
+        let handle = thread::spawn(move || loop {
+            let msg = rx.lock().unwrap().recv();
+            match msg {
+                Ok(f) => f(),
+                Err(_) => break,
             }
-        );
-        Worker { thread: Some(handle) }
+        });
+        Worker {
+            thread: Some(handle),
+        }
     }
 }
 
 #[derive(Debug)]
 pub struct SharedQueueThreadPool {
     workers: Vec<Worker>,
-    channel: (Sender<Box<dyn FnOnce() + 'static + Send>>, Arc<Mutex<Receiver<Box<dyn FnOnce() + 'static + Send>>>>)
-
+    channel: (
+        Sender<Box<dyn FnOnce() + 'static + Send>>,
+        Arc<Mutex<Receiver<Box<dyn FnOnce() + 'static + Send>>>>,
+    ),
 }
 
 impl ThreadPool for SharedQueueThreadPool {
-    fn new (n: i32) -> KvResult<SharedQueueThreadPool> {
+    fn new(n: i32) -> KvResult<SharedQueueThreadPool> {
         let mut workers = vec![];
         let (sx, rx) = channel();
         let rx = Arc::new(Mutex::new(rx));
         for _ in 0..n {
-            workers.push(
-                Worker::spawn(rx.clone())
-            );
+            workers.push(Worker::spawn(rx.clone()));
         }
-        Ok(
-            SharedQueueThreadPool { 
-                workers,
-                channel: (sx, rx)
-            }
-        )
-
+        Ok(SharedQueueThreadPool {
+            workers,
+            channel: (sx, rx),
+        })
     }
 
-    fn spawn<F: Send + 'static + FnOnce()> (&self, f: F){
+    fn spawn<F: Send + 'static + FnOnce()>(&self, f: F) {
         let _ = self.channel.0.send(Box::new(f));
     }
 }
@@ -66,25 +67,3 @@ impl Drop for SharedQueueThreadPool {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
