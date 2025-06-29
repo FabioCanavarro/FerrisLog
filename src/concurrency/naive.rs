@@ -1,4 +1,4 @@
-use std::{fmt::Debug, sync::{mpsc::{self, channel, Receiver, Sender}, Arc, Mutex}, thread::{self, JoinHandle}};
+use std::{fmt::Debug, sync::{mpsc::{channel, Receiver, Sender}, Arc, Mutex}, thread::{self, JoinHandle}};
 use crate::kvstore::error::KvResult;
 
 use super::ThreadPool;
@@ -14,8 +14,11 @@ impl Worker {
         let handle = thread::spawn(
             move|| {
                 loop {
-                    let f = rx.lock().unwrap().recv().unwrap();
-                    f()
+                    let msg = rx.lock().unwrap().recv();
+                    match msg {
+                        Ok(f) => f(),
+                        Err(_) => break
+                    }
                 }
             }
         );
@@ -53,3 +56,33 @@ impl<F: FnOnce() + Send + 'static> ThreadPool<F> for SharedQueueThreadPool<F> {
         self.channel.0.send(f);
     }
 }
+
+impl<F: 'static + Send + FnOnce()> Drop for SharedQueueThreadPool<F> {
+    fn drop(&mut self) {
+        for i in &self.workers {
+            i.thread.join();
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

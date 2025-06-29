@@ -1,4 +1,4 @@
-use std::{env::Args, thread};
+use std::thread;
 
 use crate::kvstore::error::KvResult;
 pub mod naive;
@@ -24,18 +24,18 @@ impl<F: Send + 'static + FnOnce()> ThreadPool<F> for NaiveThreadPool {
         Ok(NaiveThreadPool {})
     }
 
-    fn spawn<T: FnOnce() + Send + 'static> (&mut self, f: T) {
+    fn spawn(&self, f: F) {
         thread::spawn(f);
     }
 }
 
 
 impl<F: Send + 'static + FnOnce()> ThreadPool<F> for RayonThreadPool {
-    fn new (n: i32) -> KvResult<RayonThreadPool> {
+    fn new (_: i32) -> KvResult<RayonThreadPool> {
         todo!()
     }
 
-    fn spawn<T> (&mut self, f: T) {
+    fn spawn(&self, _: F) {
         todo!()
     }
 }
