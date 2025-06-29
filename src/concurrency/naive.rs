@@ -35,10 +35,7 @@ impl Worker {
 #[derive(Debug)]
 pub struct SharedQueueThreadPool {
     workers: Vec<Worker>,
-    channel: (
-        Sender<Box<dyn FnOnce() + 'static + Send>>,
-        Arc<Mutex<Receiver<Box<dyn FnOnce() + 'static + Send>>>>,
-    ),
+    sx: Sender<Box<dyn FnOnce() + 'static + Send>>,
 }
 
 impl ThreadPool for SharedQueueThreadPool {
@@ -51,12 +48,12 @@ impl ThreadPool for SharedQueueThreadPool {
         }
         Ok(SharedQueueThreadPool {
             workers,
-            channel: (sx, rx),
+            sx
         })
     }
 
     fn spawn<F: Send + 'static + FnOnce()>(&self, f: F) {
-        let _ = self.channel.0.send(Box::new(f));
+        let _ = self.sx.send(Box::new(f));
     }
 }
 
