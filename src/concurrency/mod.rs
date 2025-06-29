@@ -1,4 +1,4 @@
-use std::thread;
+use std::{panic::UnwindSafe, thread};
 use crate::kvstore::error::KvResult;
 pub mod naive;
 
@@ -6,7 +6,7 @@ pub trait ThreadPool {
     fn new(n: i32) -> KvResult<Self>
     where
         Self: Sized;
-    fn spawn<F: Send + 'static + FnOnce()>(&self, f: F);
+    fn spawn<F: Send + 'static + FnOnce() + UnwindSafe>(&self, f: F);
 }
 
 #[derive(Debug)]

@@ -83,7 +83,7 @@ impl ThreadPool for SharedQueueThreadPool {
         })
     }
 
-    fn spawn<F: Send + 'static + FnOnce()>(&self, f: F) {
+    fn spawn<F: Send + 'static + FnOnce() + UnwindSafe>(&self, f: F) {
         let _ = self.sx.send(Box::new(f));
     }
 }
