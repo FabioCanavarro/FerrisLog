@@ -5,7 +5,9 @@ use super::ThreadPool;
 
 #[derive(Debug)]
 struct Worker{
-    thread: JoinHandle<()>
+    // NOTE: The reason why we use Option, is so that we can take ownership, in the drop method,
+    // without it we can't
+    thread: Option<JoinHandle<()>>
     
 }
 
@@ -22,7 +24,7 @@ impl Worker {
                 }
             }
         );
-        Worker { thread: handle }
+        Worker { thread: Some(handle) }
     }
 }
 
@@ -53,14 +55,14 @@ impl<F: FnOnce() + Send + 'static> ThreadPool<F> for SharedQueueThreadPool<F> {
     }
 
     fn spawn(&self, f: F){
-        self.channel.0.send(f);
+        let _ = self.channel.0.send(f);
     }
 }
 
 impl<F: 'static + Send + FnOnce()> Drop for SharedQueueThreadPool<F> {
     fn drop(&mut self) {
-        for i in &self.workers {
-            i.thread.join();
+        for i in &mut self.workers {
+            let _ = i.thread.take().unwrap().join();
         }
     }
 }
