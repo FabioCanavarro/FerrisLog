@@ -96,7 +96,7 @@ fn main() {
             let _ = stream.shutdown(std::net::Shutdown::Write);
 
             let mut size: [u8; 1] = [0];
-            
+
             match stream.read_exact(&mut size) {
                 Ok(_) => (),
                 Err(_) => {
@@ -114,13 +114,13 @@ fn main() {
                 }
             }
 
-            let byte: Result<(String, usize), bincode::error::DecodeError> = decode_from_slice(&buf[..], config::standard());
+            let byte: Result<(String, usize), bincode::error::DecodeError> =
+                decode_from_slice(&buf[..], config::standard());
 
             match byte {
                 Ok(b) => println!("{}", b.0),
-                Err(_) => println!("Key not found")
+                Err(_) => println!("Key not found"),
             }
-
         }
 
         Commands::rm { key } => {

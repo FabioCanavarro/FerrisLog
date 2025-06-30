@@ -1,8 +1,9 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+use crossbeam_utils::sync::WaitGroup;
+use ferris::concurrency::naive::SharedQueueThreadPool;
 use ferris::concurrency::*;
 use ferris::kvstore::error::KvResult;
-use crossbeam_utils::sync::WaitGroup;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 pub type Result<T> = KvResult<T>;
 

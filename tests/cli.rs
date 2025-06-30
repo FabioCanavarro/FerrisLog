@@ -183,7 +183,7 @@ fn cli_access_server(engine: &str, addr: &str) {
 
     Command::cargo_bin("kvs-client")
         .unwrap()
-        .args(&["--addr", addr, "set", "key1", "value1", ])
+        .args(&["--addr", addr, "set", "key1", "value1"])
         .current_dir(&temp_dir)
         .assert()
         .success()
@@ -191,7 +191,7 @@ fn cli_access_server(engine: &str, addr: &str) {
 
     Command::cargo_bin("kvs-client")
         .unwrap()
-        .args(&["--addr", addr, "get", "key1", ])
+        .args(&["--addr", addr, "get", "key1"])
         .current_dir(&temp_dir)
         .assert()
         .success()
@@ -199,7 +199,7 @@ fn cli_access_server(engine: &str, addr: &str) {
 
     Command::cargo_bin("kvs-client")
         .unwrap()
-        .args(&["--addr", addr, "set", "key1", "value2", ])
+        .args(&["--addr", addr, "set", "key1", "value2"])
         .current_dir(&temp_dir)
         .assert()
         .success()
@@ -207,7 +207,7 @@ fn cli_access_server(engine: &str, addr: &str) {
 
     Command::cargo_bin("kvs-client")
         .unwrap()
-        .args(&["--addr", addr, "get", "key1", ])
+        .args(&["--addr", addr, "get", "key1"])
         .current_dir(&temp_dir)
         .assert()
         .success()
@@ -215,19 +215,19 @@ fn cli_access_server(engine: &str, addr: &str) {
 
     Command::cargo_bin("kvs-client")
         .unwrap()
-        .args(&["--addr", addr, "get", "key2", ])
+        .args(&["--addr", addr, "get", "key2"])
         .current_dir(&temp_dir)
         .assert()
         .success();
 
     Command::cargo_bin("kvs-client")
         .unwrap()
-        .args(&["--addr", addr, "rm", "key2", ])
+        .args(&["--addr", addr, "rm", "key2"])
         .current_dir(&temp_dir);
 
     Command::cargo_bin("kvs-client")
         .unwrap()
-        .args(&["--addr", addr, "set", "key2", "value3", ])
+        .args(&["--addr", addr, "set", "key2", "value3"])
         .current_dir(&temp_dir)
         .assert()
         .success()
@@ -235,7 +235,7 @@ fn cli_access_server(engine: &str, addr: &str) {
 
     Command::cargo_bin("kvs-client")
         .unwrap()
-        .args(&["--addr", addr, "rm", "key1", ])
+        .args(&["--addr", addr, "rm", "key1"])
         .current_dir(&temp_dir)
         .assert()
         .success()

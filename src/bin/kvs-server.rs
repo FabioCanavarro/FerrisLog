@@ -1,14 +1,14 @@
 use clap::Parser;
 use ferris::concurrency::ThreadPool;
-use ferris::{concurrency::NaiveThreadPool, kvstore::KvStore};
 use ferris::server::engine::Engine;
 use ferris::server::handler::handle_connection;
+use ferris::{concurrency::NaiveThreadPool, kvstore::KvStore};
+use lazy_static::lazy_static;
 use sled::Db;
 use slog::{info, o, Drain, Logger};
 use slog_term::PlainSyncDecorator;
 use std::sync::{Arc, Mutex};
 use std::{env::current_dir, io::stdout, net::TcpListener};
-use lazy_static::lazy_static;
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
@@ -24,16 +24,14 @@ fn main() {
     // Parsing arguments from the cli
     let args = Args::parse();
 
-    lazy_static!(
-        static ref LOGGER: Logger  = {
+    lazy_static! {
+        pub static ref LOGGER: Logger = {
             let plain = PlainSyncDecorator::new(stdout());
             Logger::root(
-                slog_term::FullFormat::new(plain)
-                                                .build()
-                                                .fuse(),
+                slog_term::FullFormat::new(plain).build().fuse(),
                 o!(
                     "version" => "0.1",
-                )
+                ),
             )
         };
         pub static ref DB: Arc<Mutex<Db>> = {
@@ -44,7 +42,6 @@ fn main() {
             };
             Arc::new(Mutex::new(db))
         };
-
         pub static ref STORE: Arc<Mutex<KvStore>> = {
             let wrapped_store = KvStore::open(current_dir().unwrap().as_path());
             let store = match wrapped_store {
@@ -53,14 +50,13 @@ fn main() {
             };
             Arc::new(Mutex::new(store))
         };
-    );
+    };
 
     info!(LOGGER,
         "Application started";
         "started_at" => format!("{}", args.addr),
         "Engine" => &args.engine
     );
-
 
     let engine: Engine = args.engine.into();
 
@@ -102,7 +98,7 @@ fn main() {
         Engine::Sled => {
             for stream_wrapped in listener.incoming() {
                 let mut stream = stream_wrapped.unwrap();
-                naive_pool.spawn(move|| {
+                naive_pool.spawn(move || {
                     let sled_thred = Arc::clone(&DB);
                     let mut sled_guard = sled_thred.lock().unwrap();
                     handle_connection(&mut stream, &LOGGER, &mut *sled_guard)

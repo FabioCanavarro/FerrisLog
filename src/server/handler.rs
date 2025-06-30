@@ -120,8 +120,7 @@ fn execute_command<T: KvEngine>(
                     info!(logger, "Application Info"; "Info" => format!("Sent back {:?}",&byte));
                 }
                 None => {
-                    let byte = encode_to_vec("Key not found", config::standard())
-                        .unwrap();
+                    let byte = encode_to_vec("Key not found", config::standard()).unwrap();
                     let _ = stream.write(&byte[..]);
                     warn!(logger,
                         "Application Warning";
