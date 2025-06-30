@@ -84,14 +84,16 @@ impl ThreadPool for SharedQueueThreadPool {
         let thread = thread::spawn(
             move || {
                 loop{
-                    sleep(Duration::from_millis(100));
-                    let mut to_add = 0;
-                    let mut active_worker: Vec<Worker> = Vec::new();
-                    let shutclone = shutdown_clone.load(std::sync::atomic::Ordering::SeqCst);
-                    if shutclone {
+                    if shutdown_clone.load(std::sync::atomic::Ordering::SeqCst) {
                         break;
                     }
+
+                    sleep(Duration::from_millis(100));
+
                     let mut workers_guard = worker_clone.lock().unwrap();
+                    let mut to_add = 0;
+                    let mut active_worker: Vec<Worker> = Vec::new();
+
                     println!("horeee");
                     for mut i in workers_guard.drain(..) {
                         println!("hore");
@@ -130,9 +132,14 @@ impl ThreadPool for SharedQueueThreadPool {
 
 impl Drop for SharedQueueThreadPool {
     fn drop(&mut self) {
-        println!("THIS");
+        println!("Initiating thread pool shutdown...");
+
         self.shutdown.store(true, std::sync::atomic::Ordering::SeqCst);
-        println!("THUT");
+        println!("Shutdown signal sent to analyzer.");
+
+        drop(self.sx.clone()); 
+        println!("Channel sender dropped. Workers will now terminate upon finishing their current task.");
+        
         if let Some(analyzer_handle) = self.analyzer_thread.take() {
             // This join will block until the analyzer's loop breaks (which it should now do
             // because you correctly put the `break` condition inside its loop).
@@ -141,15 +148,17 @@ impl Drop for SharedQueueThreadPool {
                 Err(e) => println!("Analyzer thread panicked during shutdown: {:?}", e),
             }
         }
-        println!("here");
+
+        println!("Joining worker threads...");
+        let mut workers_guard = self.workers.lock().unwrap();
         // NOTE: THE REASON WHY IT ERRORS IS THE LOCK IS TAKEN BY ANALYZER THREADDD
-        for i in self.workers.lock().unwrap().iter_mut() {
-            println!("hereeee");
-            // WARNING: PROBLEM IS .join()
-            let thread = i.thread.take().unwrap().join();
-            match thread {
-                    Ok(_) => (),
-                    Err(e) =>  println!("{:?}",e),
+        for worker in workers_guard.iter_mut() {
+            if let Some(handle) = worker.thread.take() {
+                // The worker's loop has already exited because the sender was dropped.
+                // This join will wait for any final task to complete.
+                if let Err(e) = handle.join() {
+                    eprintln!("A worker thread panicked during shutdown: {:?}", e);
+                }
             }
         }
 
