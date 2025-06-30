@@ -2,7 +2,7 @@ use crate::kvstore::error::KvResult;
 use std::{
     fmt::Debug, panic::{catch_unwind, UnwindSafe}, sync::{
         atomic::AtomicBool, mpsc::{channel, Receiver, Sender}, Arc, Mutex
-    }, thread::{self, sleep, sleep_ms, JoinHandle}, time::Duration
+    }, thread::{self, sleep, JoinHandle}, time::Duration
 };
 
 use super::ThreadPool;
@@ -18,12 +18,13 @@ pub struct SharedQueueThreadPool {
     *   stuck just waiting for the receiver
     */
     sx: Sender<Box<dyn FnOnce() + 'static + Send + UnwindSafe>>,
-    analyzer_thread: Option<JoinHandle<()>>
+    analyzer_thread: Option<JoinHandle<()>>,
     /* NOTE:
     *   Found the solution, what if we have another thread that checks the field of the thread, if
     *   they died, then we join and spawn a new one, that would require each thread to have be able
     *   to mutate their fields, so we use Arc<>, arc is also concurrency safe
     */
+    shutdown: Arc<AtomicBool>
 }
 
 #[derive(Debug)]
@@ -69,6 +70,8 @@ impl ThreadPool for SharedQueueThreadPool {
         let worker_clone = Arc::clone(&workers);
         let (sx, rx) = channel();
         let rx = Arc::new(Mutex::new(rx));
+        let shutdown: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
+        let shutdown_clone = Arc::clone(&shutdown);
         for _ in 0..n {
             workers.lock().unwrap().push(Worker::spawn(rx.clone()));
         }
@@ -93,13 +96,18 @@ impl ThreadPool for SharedQueueThreadPool {
                     for _ in 0..to_add {
                        workers_guard.push(Worker::spawn(rx.clone())); 
                     }
+
+                    if shutdown_clone.load(std::sync::atomic::Ordering::SeqCst) {
+                        break;
+                    }
                 }
             }
         );
         Ok(SharedQueueThreadPool {
             workers,
             sx,
-            analyzer_thread: Some(thread)
+            analyzer_thread: Some(thread),
+            shutdown
         })
     }
 
@@ -117,6 +125,7 @@ impl Drop for SharedQueueThreadPool {
                     Err(e) =>  println!("{:?}",e),
             }
         }
+        self.shutdown.store(true, std::sync::atomic::Ordering::SeqCst);
         self.analyzer_thread.take().unwrap().join().unwrap();
     }
 }
