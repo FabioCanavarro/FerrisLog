@@ -41,15 +41,21 @@ impl Worker {
         let dead_clone: Arc<AtomicBool> = Arc::clone(&dead);
         let handle = thread::spawn(
             move || loop {
+                println!(".");
                 let msg = rx.lock().unwrap().recv();
+                println!("..");
                 match msg {
                     Ok(f) => {
+                        println!("...");
                         let result = catch_unwind(
                             move|| {
+
+                            println!("....");
                                 f()
                             }
                         );
                         if let Err(_) = result { 
+                            println!(".....");
                             dead_clone.store(true, std::sync::atomic::Ordering::SeqCst);
                         }
                     },
@@ -119,6 +125,7 @@ impl ThreadPool for SharedQueueThreadPool {
 impl Drop for SharedQueueThreadPool {
     fn drop(&mut self) {
         println!("here");
+        // NOTE: THE REASON WHY IT ERRORS IS THE LOCK IS TAKEN BY ANALYZER THREADDD
         for i in self.workers.lock().unwrap().iter_mut() {
             println!("hereeee");
             // WARNING: PROBLEM IS .join()
