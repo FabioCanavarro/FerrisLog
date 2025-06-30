@@ -1,5 +1,5 @@
-use std::{panic::UnwindSafe, thread};
 use crate::kvstore::error::KvResult;
+use std::{panic::UnwindSafe, thread};
 pub mod naive;
 
 pub trait ThreadPool {
