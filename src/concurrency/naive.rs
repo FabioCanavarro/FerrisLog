@@ -77,6 +77,7 @@ impl ThreadPool for SharedQueueThreadPool {
         let thread = thread::spawn(
             move || {
                 //Store all to be deleted
+            /*
                 let mut del: Vec<usize> = vec![];
                 for i in worker_clone.lock().unwrap().iter_mut() {
                     if i.dead.load(std::sync::atomic::Ordering::SeqCst) {
@@ -103,6 +104,20 @@ impl ThreadPool for SharedQueueThreadPool {
 
                     }
                 );
+            */
+                let mut active_worker: Arc<Mutex<Vec<Worker>>> = Arc::new(Mutex::new(Vec::new()));
+                for i in worker_clone.lock().unwrap().iter_mut() {
+                    if i.dead.load(std::sync::atomic::Ordering::SeqCst) {
+                        let _ = i.thread.take().unwrap().join();
+                    }
+                    else {
+                        active_worker.lock().unwrap().push(i);
+                    }
+                };
+                worker_clone = active_worker;
+
+                let mut worker_guard = worker_clone.lock().unwrap();
+                let mut worker_to_add = 0;
             }
         );
         Ok(SharedQueueThreadPool {
@@ -122,7 +137,7 @@ impl Drop for SharedQueueThreadPool {
         for i in self.workers.lock().unwrap().iter_mut() {
             let thread = i.thread.take().unwrap().join();
             match thread {
-                    Ok(t) => (),
+                    Ok(_) => (),
                     Err(e) =>  println!("{:?}",e),
             }
         }
