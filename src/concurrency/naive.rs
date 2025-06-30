@@ -1,6 +1,6 @@
 use crate::kvstore::error::KvResult;
 use std::{
-    fmt::Debug, panic::{catch_unwind, UnwindSafe}, result, sync::{
+    fmt::Debug, panic::{catch_unwind, UnwindSafe}, sync::{
         atomic::AtomicBool, mpsc::{channel, Receiver, Sender}, Arc, Mutex
     }, thread::{self, JoinHandle}
 };
@@ -50,7 +50,7 @@ impl Worker {
                             }
                         );
                         if let Err(_) = result { 
-                            dead_clone.clone().store(true, std::sync::atomic::Ordering::SeqCst);
+                            dead_clone.store(true, std::sync::atomic::Ordering::SeqCst);
                         }
                     },
                     Err(_) => break,
