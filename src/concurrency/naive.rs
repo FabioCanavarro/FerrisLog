@@ -118,15 +118,22 @@ impl ThreadPool for SharedQueueThreadPool {
 
 impl Drop for SharedQueueThreadPool {
     fn drop(&mut self) {
+        println!("here");
         for i in self.workers.lock().unwrap().iter_mut() {
+            println!("hereeee");
+            // WARNING: PROBLEM IS .join()
             let thread = i.thread.take().unwrap().join();
             match thread {
                     Ok(_) => (),
                     Err(e) =>  println!("{:?}",e),
             }
         }
+
+        println!("THIS");
         self.shutdown.store(true, std::sync::atomic::Ordering::SeqCst);
+        println!("THUT");
         self.analyzer_thread.take().unwrap().join().unwrap();
+        println!("FUCK");
     }
 }
 
