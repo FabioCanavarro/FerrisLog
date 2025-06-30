@@ -2,7 +2,7 @@ use crate::kvstore::error::KvResult;
 use std::{
     fmt::Debug, panic::{catch_unwind, UnwindSafe}, sync::{
         atomic::AtomicBool, mpsc::{channel, Receiver, Sender}, Arc, Mutex
-    }, thread::{self, JoinHandle}
+    }, thread::{self, sleep, sleep_ms, JoinHandle}, time::Duration
 };
 
 use super::ThreadPool;
@@ -74,22 +74,25 @@ impl ThreadPool for SharedQueueThreadPool {
         }
         let thread = thread::spawn(
             move || {
-                let mut workers_guard = worker_clone.lock().unwrap();
-                let mut to_add = 0;
-                let mut active_worker: Vec<Worker> = Vec::new();
-                for mut i in worker_clone.lock().unwrap().drain(..) {
-                    if i.dead.load(std::sync::atomic::Ordering::SeqCst) {
-                        let _ = (&mut i).thread.take().unwrap().join();
-                        to_add +=1;
-                    }
-                    else {
-                        active_worker.push(i);
-                    }
-                };
-                *workers_guard = active_worker;
+                loop{
+                    sleep(Duration::from_millis(100));
+                    let mut workers_guard = worker_clone.lock().unwrap();
+                    let mut to_add = 0;
+                    let mut active_worker: Vec<Worker> = Vec::new();
+                    for mut i in worker_clone.lock().unwrap().drain(..) {
+                        if i.dead.load(std::sync::atomic::Ordering::SeqCst) {
+                            let _ = (&mut i).thread.take().unwrap().join();
+                            to_add +=1;
+                        }
+                        else {
+                            active_worker.push(i);
+                        }
+                    };
+                    *workers_guard = active_worker;
 
-                for _ in 0..to_add {
-                   workers_guard.push(Worker::spawn(rx.clone())); 
+                    for _ in 0..to_add {
+                       workers_guard.push(Worker::spawn(rx.clone())); 
+                    }
                 }
             }
         );
