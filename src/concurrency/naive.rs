@@ -1,6 +1,6 @@
 use crate::kvstore::error::KvResult;
 use std::{
-    fmt::Debug, panic::{catch_unwind, UnwindSafe}, sync::{
+    fmt::Debug, mem, panic::{catch_unwind, UnwindSafe}, sync::{
         atomic::AtomicBool, mpsc::{channel, Receiver, Sender}, Arc, Mutex
     }, thread::{self, sleep, JoinHandle}, time::Duration
 };
@@ -41,28 +41,24 @@ impl Worker {
         let dead_clone: Arc<AtomicBool> = Arc::clone(&dead);
         let handle = thread::spawn(
             move || loop {
-                println!(".");
                 let msg = rx.lock().unwrap().recv();
-                println!("..");
+
                 match msg {
                     Ok(f) => {
-                        println!("...");
                         let result = catch_unwind(
                             move|| {
-
                                 f()
                             }
                         );
-                        println!("....");
                         if let Err(_) = result { 
                             dead_clone.store(true, std::sync::atomic::Ordering::SeqCst);
                         }
-                        println!(".....");
                     },
                     Err(_) => break,
                 }
             }
         );
+
         Worker {
             thread: Some(handle),
             dead,
@@ -78,9 +74,11 @@ impl ThreadPool for SharedQueueThreadPool {
         let rx = Arc::new(Mutex::new(rx));
         let shutdown: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
         let shutdown_clone = Arc::clone(&shutdown);
+
         for _ in 0..n {
             workers.lock().unwrap().push(Worker::spawn(rx.clone()));
         }
+
         let thread = thread::spawn(
             move || {
                 loop{
@@ -94,13 +92,9 @@ impl ThreadPool for SharedQueueThreadPool {
                     let mut to_add = 0;
                     let mut active_worker: Vec<Worker> = Vec::new();
 
-                    println!("horeee");
                     for mut i in workers_guard.drain(..) {
-                        println!("hore");
                         if i.dead.load(std::sync::atomic::Ordering::SeqCst) {
-                            println!("joining");
                             (&mut i).thread.take();
-                            println!("successfully joined");
                             to_add +=1;
                         }
                         else {
@@ -137,7 +131,13 @@ impl Drop for SharedQueueThreadPool {
         self.shutdown.store(true, std::sync::atomic::Ordering::SeqCst);
         println!("Shutdown signal sent to analyzer.");
 
-        drop(self.sx.clone()); 
+        // NOTE: The reason why we drop is for the fact that the .recv will return an error instead
+        // of waiting if the sender is destroyed, so to stop the previous sx, we replace it with a
+        // dummy_sx that has no Arc reference, and drop the one with lots of reference, so the
+        // reference wont work
+        let (dummy_sx, _) = channel();
+        let old_sx = mem::replace(&mut self.sx, dummy_sx);
+        drop(old_sx); 
         println!("Channel sender dropped. Workers will now terminate upon finishing their current task.");
         
         if let Some(analyzer_handle) = self.analyzer_thread.take() {
@@ -161,8 +161,6 @@ impl Drop for SharedQueueThreadPool {
                 }
             }
         }
-
-        println!("FUCK");
     }
 }
 
