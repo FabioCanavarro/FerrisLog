@@ -76,7 +76,6 @@ impl ThreadPool for SharedQueueThreadPool {
         }
         let thread = thread::spawn(
             move || {
-                let worker_guard = worker_clone.lock().unwrap();
                 //Store all to be deleted
                 let mut del: Vec<usize> = vec![];
                 for i in worker_clone.lock().unwrap().iter_mut() {
@@ -85,9 +84,25 @@ impl ThreadPool for SharedQueueThreadPool {
                         del.push(i.uid as usize);
                     };
                 };
-                for i in del {
-                    worker_clone.lock().unwrap()[i] = Worker::spawn(rx.clone(), i as u32);
-                }
+
+                let mut worker_guard = worker_clone.lock().unwrap();
+                let mut worker_to_add = 0;
+                
+                worker_guard.retain(
+                    |worker: &mut Worker| {
+                        if del.contains(&(worker.uid as usize)) {
+                            if let Some(handle) = worker.thread.take() {
+                                let _ = handle.join();
+                            }
+                            worker_to_add +=1;
+                            false
+                        }
+                        else {
+                            true
+                        }
+
+                    }
+                );
             }
         );
         Ok(SharedQueueThreadPool {
