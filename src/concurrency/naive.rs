@@ -9,7 +9,7 @@ use super::ThreadPool;
 
 #[derive(Debug)]
 pub struct SharedQueueThreadPool {
-    workers: Vec<Worker>,
+    workers: Arc<Mutex<Vec<Worker>>>,
     /* NOTE:
     *   The rust drop methods drops the fields first before our implementation so, which means that
     *   the receiver will be dropped first (old field is (sender,receiver) ), then the thread, but
@@ -30,12 +30,13 @@ pub struct SharedQueueThreadPool {
 struct Worker {
     // NOTE: The reason why we use Option, is so that we can take ownership, in the drop method,
     // without it we can't
+    uid: u32,
     thread: Option<JoinHandle<()>>,
     dead: Arc<AtomicBool>
 }
 
 impl Worker {
-    pub fn spawn<F: FnOnce() + Send + 'static + UnwindSafe>(rx: Arc<Mutex<Receiver<F>>>) -> Worker {
+    pub fn spawn<F: FnOnce() + Send + 'static + UnwindSafe>(rx: Arc<Mutex<Receiver<F>>>, uid: u32) -> Worker {
         let dead = Arc::new(AtomicBool::new(false));
         let dead_clone: Arc<AtomicBool> = Arc::clone(&dead);
         let handle = thread::spawn(
@@ -58,22 +59,31 @@ impl Worker {
         );
         Worker {
             thread: Some(handle),
-            dead
+            dead,
+            uid
         }
     }
 }
 
 impl ThreadPool for SharedQueueThreadPool {
     fn new(n: i32) -> KvResult<SharedQueueThreadPool> {
-        let mut workers = vec![];
+        let workers: Arc<Mutex<Vec<Worker>>> = Arc::new(Mutex::new(Vec::new()));
+        let worker_clone = Arc::clone(&workers);
         let (sx, rx) = channel();
         let rx = Arc::new(Mutex::new(rx));
-        for _ in 0..n {
-            workers.push(Worker::spawn(rx.clone()));
+        for i in 0..n {
+            workers.lock().unwrap().push(Worker::spawn(rx.clone(), i as u32));
         }
         let thread = thread::spawn(
-            || {
-                todo!()
+            move || {
+                for i in worker_clone.lock().unwrap().iter_mut() {
+                    if i.dead.fetch_and(true, std::sync::atomic::Ordering::SeqCst) {
+                        let _ = i.thread.take().unwrap().join();
+                        worker_clone.lock().unwrap().remove(i.uid as usize);
+                        worker_clone.lock().unwrap().push(Worker::spawn(rx.clone(), i.uid));
+
+                    };
+                };
             }
         );
         Ok(SharedQueueThreadPool {
@@ -90,7 +100,7 @@ impl ThreadPool for SharedQueueThreadPool {
 
 impl Drop for SharedQueueThreadPool {
     fn drop(&mut self) {
-        for i in &mut self.workers {
+        for i in self.workers.lock().unwrap().iter_mut() {
             let thread = i.thread.take().unwrap().join();
             match thread {
                     Ok(t) => (),
