@@ -68,7 +68,7 @@ impl Worker {
 impl ThreadPool for SharedQueueThreadPool {
     fn new(n: i32) -> KvResult<SharedQueueThreadPool> {
         let workers: Arc<Mutex<Vec<Worker>>> = Arc::new(Mutex::new(Vec::new()));
-        let worker_clone = Arc::clone(&workers);
+        let mut worker_clone = Arc::clone(&workers);
         let (sx, rx) = channel();
         let rx = Arc::new(Mutex::new(rx));
         for i in 0..n {
@@ -105,10 +105,12 @@ impl ThreadPool for SharedQueueThreadPool {
                     }
                 );
             */
+                let mut to_add = 0;
                 let mut active_worker: Arc<Mutex<Vec<Worker>>> = Arc::new(Mutex::new(Vec::new()));
-                for i in worker_clone.lock().unwrap().iter_mut() {
+                for mut i in worker_clone.lock().unwrap().drain(..) {
                     if i.dead.load(std::sync::atomic::Ordering::SeqCst) {
-                        let _ = i.thread.take().unwrap().join();
+                        let _ = (&mut i).thread.take().unwrap().join();
+                        to_add +=1;
                     }
                     else {
                         active_worker.lock().unwrap().push(i);
