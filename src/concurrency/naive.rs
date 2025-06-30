@@ -99,7 +99,7 @@ impl ThreadPool for SharedQueueThreadPool {
                         println!("hore");
                         if i.dead.load(std::sync::atomic::Ordering::SeqCst) {
                             println!("joining");
-                            let _ = (&mut i).thread.take().unwrap().join();
+                            (&mut i).thread.take();
                             println!("successfully joined");
                             to_add +=1;
                         }
