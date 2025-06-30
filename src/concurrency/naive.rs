@@ -30,13 +30,12 @@ pub struct SharedQueueThreadPool {
 struct Worker {
     // NOTE: The reason why we use Option, is so that we can take ownership, in the drop method,
     // without it we can't
-    uid: u32,
     thread: Option<JoinHandle<()>>,
     dead: Arc<AtomicBool>
 }
 
 impl Worker {
-    pub fn spawn<F: FnOnce() + Send + 'static + UnwindSafe>(rx: Arc<Mutex<Receiver<F>>>, uid: u32) -> Worker {
+    pub fn spawn<F: FnOnce() + Send + 'static + UnwindSafe>(rx: Arc<Mutex<Receiver<F>>>) -> Worker {
         let dead = Arc::new(AtomicBool::new(false));
         let dead_clone: Arc<AtomicBool> = Arc::clone(&dead);
         let handle = thread::spawn(
@@ -60,7 +59,6 @@ impl Worker {
         Worker {
             thread: Some(handle),
             dead,
-            uid
         }
     }
 }
@@ -68,58 +66,31 @@ impl Worker {
 impl ThreadPool for SharedQueueThreadPool {
     fn new(n: i32) -> KvResult<SharedQueueThreadPool> {
         let workers: Arc<Mutex<Vec<Worker>>> = Arc::new(Mutex::new(Vec::new()));
-        let mut worker_clone = Arc::clone(&workers);
+        let worker_clone = Arc::clone(&workers);
         let (sx, rx) = channel();
         let rx = Arc::new(Mutex::new(rx));
-        for i in 0..n {
-            workers.lock().unwrap().push(Worker::spawn(rx.clone(), i as u32));
+        for _ in 0..n {
+            workers.lock().unwrap().push(Worker::spawn(rx.clone()));
         }
         let thread = thread::spawn(
             move || {
-                //Store all to be deleted
-            /*
-                let mut del: Vec<usize> = vec![];
-                for i in worker_clone.lock().unwrap().iter_mut() {
-                    if i.dead.load(std::sync::atomic::Ordering::SeqCst) {
-                        let _ = i.thread.take().unwrap().join();
-                        del.push(i.uid as usize);
-                    };
-                };
-
-                let mut worker_guard = worker_clone.lock().unwrap();
-                let mut worker_to_add = 0;
-                
-                worker_guard.retain(
-                    |worker: &mut Worker| {
-                        if del.contains(&(worker.uid as usize)) {
-                            if let Some(handle) = worker.thread.take() {
-                                let _ = handle.join();
-                            }
-                            worker_to_add +=1;
-                            false
-                        }
-                        else {
-                            true
-                        }
-
-                    }
-                );
-            */
+                let mut workers_guard = worker_clone.lock().unwrap();
                 let mut to_add = 0;
-                let mut active_worker: Arc<Mutex<Vec<Worker>>> = Arc::new(Mutex::new(Vec::new()));
+                let mut active_worker: Vec<Worker> = Vec::new();
                 for mut i in worker_clone.lock().unwrap().drain(..) {
                     if i.dead.load(std::sync::atomic::Ordering::SeqCst) {
                         let _ = (&mut i).thread.take().unwrap().join();
                         to_add +=1;
                     }
                     else {
-                        active_worker.lock().unwrap().push(i);
+                        active_worker.push(i);
                     }
                 };
-                worker_clone = active_worker;
+                *workers_guard = active_worker;
 
-                let mut worker_guard = worker_clone.lock().unwrap();
-                let mut worker_to_add = 0;
+                for _ in 0..to_add {
+                   workers_guard.push(Worker::spawn(rx.clone())); 
+                }
             }
         );
         Ok(SharedQueueThreadPool {
