@@ -76,14 +76,18 @@ impl ThreadPool for SharedQueueThreadPool {
         }
         let thread = thread::spawn(
             move || {
+                let worker_guard = worker_clone.lock().unwrap();
+                //Store all to be deleted
+                let mut del: Vec<usize> = vec![];
                 for i in worker_clone.lock().unwrap().iter_mut() {
-                    if i.dead.fetch_and(true, std::sync::atomic::Ordering::SeqCst) {
+                    if i.dead.load(std::sync::atomic::Ordering::SeqCst) {
                         let _ = i.thread.take().unwrap().join();
-                        worker_clone.lock().unwrap().remove(i.uid as usize);
-                        worker_clone.lock().unwrap().push(Worker::spawn(rx.clone(), i.uid));
-
+                        del.push(i.uid as usize);
                     };
                 };
+                for i in del {
+                    worker_clone.lock().unwrap()[i] = Worker::spawn(rx.clone(), i as u32);
+                }
             }
         );
         Ok(SharedQueueThreadPool {
