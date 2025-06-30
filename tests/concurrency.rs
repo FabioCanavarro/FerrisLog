@@ -1,6 +1,8 @@
 use crossbeam_utils::sync::WaitGroup;
-use ferris::concurrency::naive::SharedQueueThreadPool;
-use ferris::concurrency::*;
+use ferris::concurrency::naive::NaiveThreadPool;
+use ferris::concurrency::rayon::RayonThreadPool;
+use ferris::concurrency::shared::SharedQueueThreadPool;
+use ferris::concurrency::ThreadPool;
 use ferris::kvstore::error::KvResult;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
