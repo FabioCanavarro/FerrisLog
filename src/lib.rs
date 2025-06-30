@@ -7,7 +7,7 @@ extern crate serde_json;
 extern crate sled;
 extern crate slog;
 extern crate slog_term;
-
+extern crate rayon;
 pub mod concurrency;
 pub mod kv_engine;
 pub mod kvstore;

@@ -2,7 +2,7 @@ use clap::Parser;
 use ferris::concurrency::ThreadPool;
 use ferris::server::engine::Engine;
 use ferris::server::handler::handle_connection;
-use ferris::{concurrency::NaiveThreadPool, kvstore::KvStore};
+use ferris::{concurrency::naive::NaiveThreadPool, kvstore::KvStore};
 use lazy_static::lazy_static;
 use sled::Db;
 use slog::{info, o, Drain, Logger};

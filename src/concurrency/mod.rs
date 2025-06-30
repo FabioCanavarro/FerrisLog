@@ -1,6 +1,9 @@
 use crate::kvstore::error::KvResult;
-use std::{panic::UnwindSafe, thread};
+use std::panic::UnwindSafe;
+
 pub mod naive;
+pub mod shared;
+pub mod rayon;
 
 pub trait ThreadPool {
     fn new(n: i32) -> KvResult<Self>
@@ -9,28 +12,4 @@ pub trait ThreadPool {
     fn spawn<F: Send + 'static + FnOnce() + UnwindSafe>(&self, f: F);
 }
 
-#[derive(Debug)]
-pub struct NaiveThreadPool {}
 
-#[derive(Debug)]
-pub struct RayonThreadPool {}
-
-impl ThreadPool for NaiveThreadPool {
-    fn new(_: i32) -> KvResult<NaiveThreadPool> {
-        Ok(NaiveThreadPool {})
-    }
-
-    fn spawn<F: Send + 'static + FnOnce()>(&self, f: F) {
-        thread::spawn(f);
-    }
-}
-
-impl ThreadPool for RayonThreadPool {
-    fn new(_: i32) -> KvResult<RayonThreadPool> {
-        todo!()
-    }
-
-    fn spawn<F: Send + 'static + FnOnce()>(&self, _: F) {
-        todo!()
-    }
-}
