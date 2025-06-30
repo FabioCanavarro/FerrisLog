@@ -50,14 +50,14 @@ impl Worker {
                         let result = catch_unwind(
                             move|| {
 
-                            println!("....");
                                 f()
                             }
                         );
+                        println!("....");
                         if let Err(_) = result { 
-                            println!(".....");
                             dead_clone.store(true, std::sync::atomic::Ordering::SeqCst);
                         }
+                        println!(".....");
                     },
                     Err(_) => break,
                 }
@@ -85,27 +85,33 @@ impl ThreadPool for SharedQueueThreadPool {
             move || {
                 loop{
                     sleep(Duration::from_millis(100));
-                    let mut workers_guard = worker_clone.lock().unwrap();
                     let mut to_add = 0;
                     let mut active_worker: Vec<Worker> = Vec::new();
-                    for mut i in worker_clone.lock().unwrap().drain(..) {
+                    let shutclone = shutdown_clone.load(std::sync::atomic::Ordering::SeqCst);
+                    if shutclone {
+                        break;
+                    }
+                    let mut workers_guard = worker_clone.lock().unwrap();
+                    println!("horeee");
+                    for mut i in workers_guard.drain(..) {
+                        println!("hore");
                         if i.dead.load(std::sync::atomic::Ordering::SeqCst) {
+                            println!("joining");
                             let _ = (&mut i).thread.take().unwrap().join();
+                            println!("successfully joined");
                             to_add +=1;
                         }
                         else {
                             active_worker.push(i);
                         }
                     };
+
                     *workers_guard = active_worker;
 
                     for _ in 0..to_add {
                        workers_guard.push(Worker::spawn(rx.clone())); 
                     }
 
-                    if shutdown_clone.load(std::sync::atomic::Ordering::SeqCst) {
-                        break;
-                    }
                 }
             }
         );
@@ -124,6 +130,17 @@ impl ThreadPool for SharedQueueThreadPool {
 
 impl Drop for SharedQueueThreadPool {
     fn drop(&mut self) {
+        println!("THIS");
+        self.shutdown.store(true, std::sync::atomic::Ordering::SeqCst);
+        println!("THUT");
+        if let Some(analyzer_handle) = self.analyzer_thread.take() {
+            // This join will block until the analyzer's loop breaks (which it should now do
+            // because you correctly put the `break` condition inside its loop).
+            match analyzer_handle.join() {
+                Ok(_) => println!("Analyzer thread joined successfully."),
+                Err(e) => println!("Analyzer thread panicked during shutdown: {:?}", e),
+            }
+        }
         println!("here");
         // NOTE: THE REASON WHY IT ERRORS IS THE LOCK IS TAKEN BY ANALYZER THREADDD
         for i in self.workers.lock().unwrap().iter_mut() {
@@ -136,10 +153,6 @@ impl Drop for SharedQueueThreadPool {
             }
         }
 
-        println!("THIS");
-        self.shutdown.store(true, std::sync::atomic::Ordering::SeqCst);
-        println!("THUT");
-        self.analyzer_thread.take().unwrap().join().unwrap();
         println!("FUCK");
     }
 }
