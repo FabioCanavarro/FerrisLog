@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, Criterion};
-use ferris::kvstore::KvStore;
+use ferris::{concurrency::{naive::NaiveThreadPool, shared::SharedQueueThreadPool, ThreadPool}, kvstore::KvStore};
 use tempfile::TempDir;
 
 fn fake_data() -> (String, String) {
@@ -46,6 +46,58 @@ pub fn multi_set_benchmark(c: &mut Criterion) {
             |(mut store, _tempdir)| {
                 for item in &data {
                     let _ = store.set(black_box(item.0.clone()), black_box(item.1.clone()));
+                }
+            },
+            criterion::BatchSize::LargeInput,
+        )
+    });
+}
+
+pub fn set_benchmark_shared_pool_4_threads(c: &mut Criterion) {
+    let data = multi_fake_data();
+    let pool = SharedQueueThreadPool::new(4).unwrap();
+
+
+    c.bench_function("100 Random Set NaivePool", |b| {
+        b.iter_batched(
+            || {
+                let temp_dir = TempDir::new().unwrap();
+                let store = KvStore::open_custom(temp_dir.path()).unwrap();
+                (store, temp_dir)
+            },
+            |(mut store, _tempdir)| {
+                for item in &data {
+                    pool.spawn(
+                        || {
+                            let _ = store.set(black_box(item.0.clone()), black_box(item.1.clone()));
+                        }
+                    );
+                }
+            },
+            criterion::BatchSize::LargeInput,
+        )
+    });
+}
+
+pub fn set_benchmark_shared_pool_8_threads(c: &mut Criterion) {
+    let data = multi_fake_data();
+    let pool = SharedQueueThreadPool::new(8).unwrap();
+
+
+    c.bench_function("100 Random Set NaivePool", |b| {
+        b.iter_batched(
+            || {
+                let temp_dir = TempDir::new().unwrap();
+                let store = KvStore::open_custom(temp_dir.path()).unwrap();
+                (store, temp_dir)
+            },
+            |(mut store, _tempdir)| {
+                for item in &data {
+                    pool.spawn(
+                        || {
+                            let _ = store.set(black_box(item.0.clone()), black_box(item.1.clone()));
+                        }
+                    );
                 }
             },
             criterion::BatchSize::LargeInput,
