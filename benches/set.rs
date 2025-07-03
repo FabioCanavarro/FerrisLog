@@ -117,6 +117,68 @@ pub fn set_benchmark_shared_pool_8_threads(c: &mut Criterion) {
     });
 }
 
+pub fn set_benchmark_rayon_pool_4_threads(c: &mut Criterion) {
+    let data = multi_fake_data();
+    let pool = RayonThreadPool::new(4).unwrap();
+
+    c.bench_function("100 Random Set RayonThreadPool 4 threads", |b| {
+        b.iter_batched(
+            || {
+                let temp_dir = TempDir::new().unwrap();
+                let store = KvStore::open_custom(temp_dir.path()).unwrap();
+                let shared_store = Arc::new(Mutex::new(store));
+
+                (shared_store, temp_dir)
+            },
+            |(shared_store, _tempdir)| {
+                for item in &data {
+                    let store_clone = Arc::clone(&shared_store);
+                    let item_clone = item.clone();
+                    pool.spawn(
+                        move || {
+                            if let Ok(mut store) = store_clone.lock() {
+                                let _ = store.set_bench_specific(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()));
+                            }
+                        }
+                    );
+                }
+            },
+            criterion::BatchSize::LargeInput,
+        )
+    });
+}
+
+pub fn set_benchmark_rayon_pool_8_threads(c: &mut Criterion) {
+    let data = multi_fake_data();
+    let pool = RayonThreadPool::new(8).unwrap();
+
+    c.bench_function("100 Random Set RayonThreadPool 8 threads", |b| {
+        b.iter_batched(
+            || {
+                let temp_dir = TempDir::new().unwrap();
+                let store = KvStore::open_custom(temp_dir.path()).unwrap();
+                let shared_store = Arc::new(Mutex::new(store));
+
+                (shared_store, temp_dir)
+            },
+            |(shared_store, _tempdir)| {
+                for item in &data {
+                    let store_clone = Arc::clone(&shared_store);
+                    let item_clone = item.clone();
+                    pool.spawn(
+                        move || {
+                            if let Ok(mut store) = store_clone.lock() {
+                                let _ = store.set_bench_specific(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()));
+                            }
+                        }
+                    );
+                }
+            },
+            criterion::BatchSize::LargeInput,
+        )
+    });
+}
+
 criterion_group!(
     set_benches, 
     set_benchmark_shared_pool_4_threads
