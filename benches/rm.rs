@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, Criterion};
 use ferris::kvstore::KvStore;
 use tempfile::TempDir;
 
@@ -64,4 +64,3 @@ criterion_group!(
     single_remove_benchmark,
     multi_remove_benchmark
 );
-criterion_main!(remove_benches);

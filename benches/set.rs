@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, Criterion};
 use ferris::kvstore::KvStore;
 use tempfile::TempDir;
 
@@ -53,5 +53,9 @@ pub fn multi_set_benchmark(c: &mut Criterion) {
     });
 }
 
-criterion_group!(set_benches, single_set_benchmark, multi_set_benchmark);
-criterion_main!(set_benches);
+criterion_group!(
+    set_benches, 
+
+    single_set_benchmark,
+    multi_set_benchmark
+);

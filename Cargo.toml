@@ -42,18 +42,5 @@ name = "kvs"
 path = "src/bin/kvs.rs"
 
 [[bench]]
-name = "set"
+name = "main_bench"
 harness = false
-
-
-[[bench]]
-name = "rm"
-harness = false
-
-
-[[bench]]
-name = "get"
-harness = false
-
-[[bench]]
-name = "minimal"
