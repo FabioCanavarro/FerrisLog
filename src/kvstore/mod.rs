@@ -31,9 +31,6 @@ impl KvStore {
             compaction_threshold: COMPACTION_THRESHOLD
         }
     }
-    pub fn new_custom(path: PathBuf, compaction_threshold: u64) -> KvStore {
-        KvStore { path, table: HashMap::new(), compaction_threshold }
-    }
     pub fn nocompactionset(&mut self, key: String, val: String) -> KvResult<()> {
         let cmd = Command::set(key.clone(), val.clone());
 
@@ -156,6 +153,49 @@ impl KvStore {
         Ok(KvStore {
             path: path.into().join("log.txt"),
             table: hash,
+            compaction_threshold: COMPACTION_THRESHOLD
+        })
+    }
+
+    pub fn open_custom(path: impl Into<PathBuf> + AsRef<Path> + Copy, compaction_threshold: u64) -> KvResult<KvStore> {
+        let f = match File::open(path.into().join("log.txt")) {
+            Ok(f) => f,
+            Err(_) => {
+                let _ = File::create(path.into().join("log.txt"));
+                File::open(path.into().join("log.txt")).unwrap()
+            }
+        };
+        let mut hash: HashMap<String, u64> = HashMap::new();
+        let mut buffer = BufReader::new(&f);
+        let mut pos = buffer.seek(SeekFrom::Start(0)).unwrap();
+
+        loop {
+            let mut line = String::new();
+
+            let length = buffer.read_line(&mut line).unwrap();
+            if length == 0 {
+                break;
+            }
+            let res = serde_json::from_str::<Command>(&line.to_string());
+
+            match res {
+                Ok(re) => {
+                    match re {
+                        Command::Set { key, val: _ } => hash.insert(key, pos),
+                        Command::Remove { key } => hash.remove(&key),
+                    };
+                }
+
+                Err(_) => return Err(KvError::ParseError),
+            }
+
+            pos = buffer.seek(SeekFrom::Start(pos + length as u64)).unwrap();
+        }
+
+        Ok(KvStore {
+            path: path.into().join("log.txt"),
+            table: hash,
+            compaction_threshold
         })
     }
 
