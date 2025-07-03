@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::{fs::File, sync::{Arc, Mutex}};
 
 use criterion::{black_box, criterion_group, Criterion};
 use ferris::{concurrency::{rayon::RayonThreadPool, shared::SharedQueueThreadPool, ThreadPool}, kvstore::KvStore};
@@ -65,16 +65,18 @@ pub fn set_benchmark_shared_pool_4_threads(c: &mut Criterion) {
                 let temp_dir = TempDir::new().unwrap();
                 let store = KvStore::open_custom(temp_dir.path()).unwrap();
                 let shared_store = Arc::new(Mutex::new(store));
-                shared_store
+
+                (shared_store, temp_dir)
             },
-            |shared_store| {
+            |(shared_store, _tempdir)| {
                 for item in &data {
                     let store_clone = Arc::clone(&shared_store);
                     let item_clone = item.clone();
                     pool.spawn(
                         move || {
-                            let mut store = store_clone.lock().unwrap();
-                            let _ = store.set(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()));
+                            if let Ok(mut store) = store_clone.lock() {
+                                let _ = store.set_bench_specific(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()));
+                            }
                         }
                     );
                 }
@@ -86,9 +88,5 @@ pub fn set_benchmark_shared_pool_4_threads(c: &mut Criterion) {
 
 criterion_group!(
     set_benches, 
-
-    single_set_benchmark,
-    multi_set_benchmark,
-    set_benchmark_shared_pool_4_threads,
     set_benchmark_shared_pool_4_threads
 );
