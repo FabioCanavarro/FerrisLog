@@ -23,7 +23,7 @@ pub fn single_set_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 let temp_dir = TempDir::new().unwrap();
-                let store = KvStore::open(temp_dir.path()).unwrap();
+                let store = KvStore::open_custom(temp_dir.path()).unwrap();
                 (store, temp_dir)
             },
             //NOTE: I kept tempdir, because, they keep dropping it after the setup finish which
@@ -40,7 +40,7 @@ pub fn multi_set_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 let temp_dir = TempDir::new().unwrap();
-                let store = KvStore::open(temp_dir.path()).unwrap();
+                let store = KvStore::open_custom(temp_dir.path()).unwrap();
                 (store, temp_dir)
             },
             |(mut store, _tempdir)| {

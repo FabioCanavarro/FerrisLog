@@ -23,7 +23,7 @@ pub fn single_get_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 let temp_dir = TempDir::new().unwrap();
-                let mut store = KvStore::open(temp_dir.path()).unwrap();
+                let mut store = KvStore::open_custom(temp_dir.path()).unwrap();
                 store.set(key.clone(), value.clone()).unwrap();
                 (store, temp_dir)
             },
@@ -41,7 +41,7 @@ pub fn multi_get_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 let temp_dir = TempDir::new().unwrap();
-                let mut store = KvStore::open(temp_dir.path()).unwrap();
+                let mut store = KvStore::open_custom(temp_dir.path()).unwrap();
                 for item in &data {
                     store
                         .set(black_box(item.0.clone()), black_box(item.1.clone()))

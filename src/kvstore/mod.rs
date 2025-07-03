@@ -157,7 +157,8 @@ impl KvStore {
         })
     }
 
-    pub fn open_custom(path: impl Into<PathBuf> + AsRef<Path> + Copy, compaction_threshold: u64) -> KvResult<KvStore> {
+    pub fn open_custom(path: impl Into<PathBuf> + AsRef<Path> + Copy) -> KvResult<KvStore> {
+        let compaction_threshold: u64 = 10000000000000000;
         let f = match File::open(path.into().join("log.txt")) {
             Ok(f) => f,
             Err(_) => {
