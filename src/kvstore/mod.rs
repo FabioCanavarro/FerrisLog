@@ -20,6 +20,7 @@ const COMPACTION_THRESHOLD: u64 = 1024;
 pub struct KvStore {
     path: PathBuf,
     pub table: HashMap<String, u64>,
+    compaction_threshold: u64
 }
 
 impl KvStore {
@@ -27,7 +28,11 @@ impl KvStore {
         KvStore {
             path,
             table: HashMap::new(),
+            compaction_threshold: COMPACTION_THRESHOLD
         }
+    }
+    pub fn new_custom(path: PathBuf, compaction_threshold: u64) -> KvStore {
+        KvStore { path, table: HashMap::new(), compaction_threshold }
     }
     pub fn nocompactionset(&mut self, key: String, val: String) -> KvResult<()> {
         let cmd = Command::set(key.clone(), val.clone());
@@ -64,7 +69,7 @@ impl KvStore {
 
         let length = size.unwrap().len();
 
-        if length > COMPACTION_THRESHOLD {
+        if length > self.compaction_threshold {
             let _ = self.compaction();
         }
 
