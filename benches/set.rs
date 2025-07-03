@@ -1,5 +1,7 @@
+use std::sync::{Arc, Mutex};
+
 use criterion::{black_box, criterion_group, Criterion};
-use ferris::{concurrency::{naive::NaiveThreadPool, shared::SharedQueueThreadPool, ThreadPool}, kvstore::KvStore};
+use ferris::{concurrency::{rayon::RayonThreadPool, shared::SharedQueueThreadPool, ThreadPool}, kvstore::KvStore};
 use tempfile::TempDir;
 
 fn fake_data() -> (String, String) {
@@ -57,45 +59,22 @@ pub fn set_benchmark_shared_pool_4_threads(c: &mut Criterion) {
     let data = multi_fake_data();
     let pool = SharedQueueThreadPool::new(4).unwrap();
 
-
-    c.bench_function("100 Random Set NaivePool", |b| {
+    c.bench_function("100 Random Set SharedQueueThreadPool 4 threads", |b| {
         b.iter_batched(
             || {
                 let temp_dir = TempDir::new().unwrap();
                 let store = KvStore::open_custom(temp_dir.path()).unwrap();
-                (store, temp_dir)
+                let shared_store = Arc::new(Mutex::new(store));
+                shared_store
             },
-            |(mut store, _tempdir)| {
+            |shared_store| {
                 for item in &data {
+                    let store_clone = Arc::clone(&shared_store);
+                    let item_clone = item.clone();
                     pool.spawn(
-                        || {
-                            let _ = store.set(black_box(item.0.clone()), black_box(item.1.clone()));
-                        }
-                    );
-                }
-            },
-            criterion::BatchSize::LargeInput,
-        )
-    });
-}
-
-pub fn set_benchmark_shared_pool_8_threads(c: &mut Criterion) {
-    let data = multi_fake_data();
-    let pool = SharedQueueThreadPool::new(8).unwrap();
-
-
-    c.bench_function("100 Random Set NaivePool", |b| {
-        b.iter_batched(
-            || {
-                let temp_dir = TempDir::new().unwrap();
-                let store = KvStore::open_custom(temp_dir.path()).unwrap();
-                (store, temp_dir)
-            },
-            |(mut store, _tempdir)| {
-                for item in &data {
-                    pool.spawn(
-                        || {
-                            let _ = store.set(black_box(item.0.clone()), black_box(item.1.clone()));
+                        move || {
+                            let mut store = store_clone.lock().unwrap();
+                            let _ = store.set(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()));
                         }
                     );
                 }
@@ -109,5 +88,7 @@ criterion_group!(
     set_benches, 
 
     single_set_benchmark,
-    multi_set_benchmark
+    multi_set_benchmark,
+    set_benchmark_shared_pool_4_threads,
+    set_benchmark_shared_pool_4_threads
 );
