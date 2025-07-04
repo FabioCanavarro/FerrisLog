@@ -72,8 +72,9 @@ pub fn get_benchmark_shared_pool_4_threads(c: &mut Criterion) {
                 let temp_dir = TempDir::new().unwrap();
                 let mut store = KvStore::open_custom(temp_dir.path()).unwrap();
                 for item in &data {
+                    let item_clone = item.clone();
                     store
-                        .set(black_box(item.0.clone()), black_box(item.1.clone()))
+                        .set(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()))
                         .unwrap();
                 }                let shared_store = Arc::new(Mutex::new(store));
                 // Create a WaitGroup for each batch
@@ -88,8 +89,8 @@ pub fn get_benchmark_shared_pool_4_threads(c: &mut Criterion) {
                     let wg_clone = wg.clone();
                     pool.spawn(
                         move || {
-                            if let Ok(mut store) = store_clone.lock() {
-                                let _ = store.get(black_box(item.0.clone()));
+                            if let Ok(store) = store_clone.lock() {
+                                let _ = store.get(black_box(item_clone.0.clone()));
                             }
                             // Drop the WaitGroup clone when the task is done
                             drop(wg_clone);
@@ -114,8 +115,9 @@ pub fn get_benchmark_shared_pool_8_threads(c: &mut Criterion) {
                 let temp_dir = TempDir::new().unwrap();
                 let mut store = KvStore::open_custom(temp_dir.path()).unwrap();
                 for item in &data {
+                    let item_clone = item.clone();
                     store
-                        .set(black_box(item.0.clone()), black_box(item.1.clone()))
+                        .set(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()))
                         .unwrap();
                 }                let shared_store = Arc::new(Mutex::new(store));
                 // Create a WaitGroup for each batch
@@ -130,8 +132,8 @@ pub fn get_benchmark_shared_pool_8_threads(c: &mut Criterion) {
                     let wg_clone = wg.clone();
                     pool.spawn(
                         move || {
-                            if let Ok(mut store) = store_clone.lock() {
-                                let _ = store.get(black_box(item.0.clone()));
+                            if let Ok(store) = store_clone.lock() {
+                                let _ = store.get(black_box(item_clone.0.clone()));
                             }
                             // Drop the WaitGroup clone when the task is done
                             drop(wg_clone);
@@ -156,8 +158,9 @@ pub fn get_benchmark_rayon_pool_4_threads(c: &mut Criterion) {
                 let temp_dir = TempDir::new().unwrap();
                 let mut store = KvStore::open_custom(temp_dir.path()).unwrap();
                 for item in &data {
+                    let item_clone = item.clone();
                     store
-                        .set(black_box(item.0.clone()), black_box(item.1.clone()))
+                        .set(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()))
                         .unwrap();
                 }                let shared_store = Arc::new(Mutex::new(store));
                 // Create a WaitGroup for each batch
@@ -172,8 +175,8 @@ pub fn get_benchmark_rayon_pool_4_threads(c: &mut Criterion) {
                     let wg_clone = wg.clone();
                     pool.spawn(
                         move || {
-                            if let Ok(mut store) = store_clone.lock() {
-                                let _ = store.get(black_box(item.0.clone()));
+                            if let Ok(store) = store_clone.lock() {
+                                let _ = store.get(black_box(item_clone.0.clone()));
                             }
                             // Drop the WaitGroup clone when the task is done
                             drop(wg_clone);
@@ -198,8 +201,9 @@ pub fn get_benchmark_rayon_pool_8_threads(c: &mut Criterion) {
                 let temp_dir = TempDir::new().unwrap();
                 let mut store = KvStore::open_custom(temp_dir.path()).unwrap();
                 for item in &data {
+                    let item_clone = item.clone();
                     store
-                        .set(black_box(item.0.clone()), black_box(item.1.clone()))
+                        .set(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()))
                         .unwrap();
                 }                let shared_store = Arc::new(Mutex::new(store));
                 // Create a WaitGroup for each batch
@@ -214,8 +218,8 @@ pub fn get_benchmark_rayon_pool_8_threads(c: &mut Criterion) {
                     let wg_clone = wg.clone();
                     pool.spawn(
                         move || {
-                            if let Ok(mut store) = store_clone.lock() {
-                                let _ = store.get(black_box(item.0.clone()));
+                            if let Ok(store) = store_clone.lock() {
+                                let _ = store.get(black_box(item_clone.0.clone()));
                             }
                             // Drop the WaitGroup clone when the task is done
                             drop(wg_clone);
@@ -233,5 +237,9 @@ pub fn get_benchmark_rayon_pool_8_threads(c: &mut Criterion) {
 criterion_group!(
     get_benches,
     single_get_benchmark,
-    multi_get_benchmark
+    multi_get_benchmark,
+    get_benchmark_shared_pool_4_threads,
+    get_benchmark_rayon_pool_4_threads,
+    get_benchmark_shared_pool_8_threads,
+    get_benchmark_rayon_pool_8_threads
 );
