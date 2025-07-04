@@ -1,5 +1,10 @@
 use std::{
-    collections::HashMap, error::Error, fs::{self, create_dir, File}, io::{BufRead, BufReader, Read, Seek, SeekFrom, Write}, path::{Path, PathBuf}, str::FromStr
+    collections::HashMap,
+    error::Error,
+    fs::{self, create_dir, File},
+    io::{BufRead, BufReader, Read, Seek, SeekFrom, Write},
+    path::{Path, PathBuf},
+    str::FromStr,
 };
 pub mod command;
 pub mod error;
@@ -16,7 +21,7 @@ const COMPACTION_THRESHOLD: u64 = 1024;
 pub struct KvStore {
     path: PathBuf,
     pub table: HashMap<String, u64>,
-    compaction_threshold: u64
+    compaction_threshold: u64,
 }
 
 impl KvStore {
@@ -24,7 +29,7 @@ impl KvStore {
         KvStore {
             path,
             table: HashMap::new(),
-            compaction_threshold: COMPACTION_THRESHOLD
+            compaction_threshold: COMPACTION_THRESHOLD,
         }
     }
     pub fn nocompactionset(&mut self, key: String, val: String) -> KvResult<()> {
@@ -60,7 +65,9 @@ impl KvStore {
 
         let size = fs::metadata(&self.path);
 
-        let length = size.expect("Isnt able to extract the size from the lenght!!!").len();
+        let length = size
+            .expect("Isnt able to extract the size from the lenght!!!")
+            .len();
 
         if length > self.compaction_threshold {
             let _ = self.compaction();
@@ -102,7 +109,9 @@ impl KvStore {
         let mut f = BufReader::new(file);
 
         // Seek from val to the \n
-        let _ = f.seek(SeekFrom::Start(*val.expect("Isnt able to seek from val to \\n")));
+        let _ = f.seek(SeekFrom::Start(
+            *val.expect("Isnt able to seek from val to \\n"),
+        ));
         let mut line = String::new();
         let _ = f.read_line(&mut line);
         let res = serde_json::from_str::<Command>(&line.to_string());
@@ -147,7 +156,9 @@ impl KvStore {
         loop {
             let mut line = String::new();
 
-            let length = buffer.read_line(&mut line).expect("Isnt able to read a line in the log.txt!!!");
+            let length = buffer
+                .read_line(&mut line)
+                .expect("Isnt able to read a line in the log.txt!!!");
             if length == 0 {
                 break;
             }
@@ -170,7 +181,7 @@ impl KvStore {
         Ok(KvStore {
             path: path.into().join("log.txt"),
             table: hash,
-            compaction_threshold: COMPACTION_THRESHOLD
+            compaction_threshold: COMPACTION_THRESHOLD,
         })
     }
 
@@ -190,7 +201,9 @@ impl KvStore {
         loop {
             let mut line = String::new();
 
-            let length = buffer.read_line(&mut line).expect("Isnt able to read the line in log.txt");
+            let length = buffer
+                .read_line(&mut line)
+                .expect("Isnt able to read the line in log.txt");
             if length == 0 {
                 break;
             }
@@ -213,7 +226,7 @@ impl KvStore {
         Ok(KvStore {
             path: path.into().join("log.txt"),
             table: hash,
-            compaction_threshold
+            compaction_threshold,
         })
     }
 
@@ -224,7 +237,10 @@ impl KvStore {
         for key in self.table.keys() {
             let _ = store.nocompactionset(
                 key.to_string(),
-                self.get(key.to_string()).expect("Unable to unwrap the Some(value) from the key").expect("Unable to get the value from the Some(Value)").to_string(),
+                self.get(key.to_string())
+                    .expect("Unable to unwrap the Some(value) from the key")
+                    .expect("Unable to get the value from the Some(Value)")
+                    .to_string(),
             );
         }
 

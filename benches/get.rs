@@ -2,7 +2,10 @@ use std::sync::{Arc, Mutex};
 
 use criterion::{black_box, criterion_group, Criterion};
 use crossbeam_utils::sync::WaitGroup;
-use ferris::{concurrency::{rayon::RayonThreadPool, shared::SharedQueueThreadPool, ThreadPool}, kvstore::KvStore};
+use ferris::{
+    concurrency::{rayon::RayonThreadPool, shared::SharedQueueThreadPool, ThreadPool},
+    kvstore::KvStore,
+};
 use tempfile::TempDir;
 
 fn fake_data() -> (String, String) {
@@ -74,9 +77,13 @@ pub fn get_benchmark_shared_pool_4_threads(c: &mut Criterion) {
                 for item in &data {
                     let item_clone = item.clone();
                     store
-                        .set(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()))
+                        .set(
+                            black_box(item_clone.0.clone()),
+                            black_box(item_clone.1.clone()),
+                        )
                         .unwrap();
-                }                let shared_store = Arc::new(Mutex::new(store));
+                }
+                let shared_store = Arc::new(Mutex::new(store));
                 // Create a WaitGroup for each batch
                 let wg = WaitGroup::new();
                 (shared_store, temp_dir, wg)
@@ -87,15 +94,13 @@ pub fn get_benchmark_shared_pool_4_threads(c: &mut Criterion) {
                     let item_clone = item.clone();
                     // Clone the WaitGroup for each task
                     let wg_clone = wg.clone();
-                    pool.spawn(
-                        move || {
-                            if let Ok(store) = store_clone.lock() {
-                                let _ = store.get(black_box(item_clone.0.clone()));
-                            }
-                            // Drop the WaitGroup clone when the task is done
-                            drop(wg_clone);
+                    pool.spawn(move || {
+                        if let Ok(store) = store_clone.lock() {
+                            let _ = store.get(black_box(item_clone.0.clone()));
                         }
-                    );
+                        // Drop the WaitGroup clone when the task is done
+                        drop(wg_clone);
+                    });
                 }
                 // Wait here until all spawned tasks are complete
                 wg.wait();
@@ -117,9 +122,13 @@ pub fn get_benchmark_shared_pool_8_threads(c: &mut Criterion) {
                 for item in &data {
                     let item_clone = item.clone();
                     store
-                        .set(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()))
+                        .set(
+                            black_box(item_clone.0.clone()),
+                            black_box(item_clone.1.clone()),
+                        )
                         .unwrap();
-                }                let shared_store = Arc::new(Mutex::new(store));
+                }
+                let shared_store = Arc::new(Mutex::new(store));
                 // Create a WaitGroup for each batch
                 let wg = WaitGroup::new();
                 (shared_store, temp_dir, wg)
@@ -130,15 +139,13 @@ pub fn get_benchmark_shared_pool_8_threads(c: &mut Criterion) {
                     let item_clone = item.clone();
                     // Clone the WaitGroup for each task
                     let wg_clone = wg.clone();
-                    pool.spawn(
-                        move || {
-                            if let Ok(store) = store_clone.lock() {
-                                let _ = store.get(black_box(item_clone.0.clone()));
-                            }
-                            // Drop the WaitGroup clone when the task is done
-                            drop(wg_clone);
+                    pool.spawn(move || {
+                        if let Ok(store) = store_clone.lock() {
+                            let _ = store.get(black_box(item_clone.0.clone()));
                         }
-                    );
+                        // Drop the WaitGroup clone when the task is done
+                        drop(wg_clone);
+                    });
                 }
                 // Wait here until all spawned tasks are complete
                 wg.wait();
@@ -160,9 +167,13 @@ pub fn get_benchmark_rayon_pool_4_threads(c: &mut Criterion) {
                 for item in &data {
                     let item_clone = item.clone();
                     store
-                        .set(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()))
+                        .set(
+                            black_box(item_clone.0.clone()),
+                            black_box(item_clone.1.clone()),
+                        )
                         .unwrap();
-                }                let shared_store = Arc::new(Mutex::new(store));
+                }
+                let shared_store = Arc::new(Mutex::new(store));
                 // Create a WaitGroup for each batch
                 let wg = WaitGroup::new();
                 (shared_store, temp_dir, wg)
@@ -173,15 +184,13 @@ pub fn get_benchmark_rayon_pool_4_threads(c: &mut Criterion) {
                     let item_clone = item.clone();
                     // Clone the WaitGroup for each task
                     let wg_clone = wg.clone();
-                    pool.spawn(
-                        move || {
-                            if let Ok(store) = store_clone.lock() {
-                                let _ = store.get(black_box(item_clone.0.clone()));
-                            }
-                            // Drop the WaitGroup clone when the task is done
-                            drop(wg_clone);
+                    pool.spawn(move || {
+                        if let Ok(store) = store_clone.lock() {
+                            let _ = store.get(black_box(item_clone.0.clone()));
                         }
-                    );
+                        // Drop the WaitGroup clone when the task is done
+                        drop(wg_clone);
+                    });
                 }
                 // Wait here until all spawned tasks are complete
                 wg.wait();
@@ -203,9 +212,13 @@ pub fn get_benchmark_rayon_pool_8_threads(c: &mut Criterion) {
                 for item in &data {
                     let item_clone = item.clone();
                     store
-                        .set(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()))
+                        .set(
+                            black_box(item_clone.0.clone()),
+                            black_box(item_clone.1.clone()),
+                        )
                         .unwrap();
-                }                let shared_store = Arc::new(Mutex::new(store));
+                }
+                let shared_store = Arc::new(Mutex::new(store));
                 // Create a WaitGroup for each batch
                 let wg = WaitGroup::new();
                 (shared_store, temp_dir, wg)
@@ -216,15 +229,13 @@ pub fn get_benchmark_rayon_pool_8_threads(c: &mut Criterion) {
                     let item_clone = item.clone();
                     // Clone the WaitGroup for each task
                     let wg_clone = wg.clone();
-                    pool.spawn(
-                        move || {
-                            if let Ok(store) = store_clone.lock() {
-                                let _ = store.get(black_box(item_clone.0.clone()));
-                            }
-                            // Drop the WaitGroup clone when the task is done
-                            drop(wg_clone);
+                    pool.spawn(move || {
+                        if let Ok(store) = store_clone.lock() {
+                            let _ = store.get(black_box(item_clone.0.clone()));
                         }
-                    );
+                        // Drop the WaitGroup clone when the task is done
+                        drop(wg_clone);
+                    });
                 }
                 // Wait here until all spawned tasks are complete
                 wg.wait();

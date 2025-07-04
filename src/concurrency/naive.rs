@@ -1,10 +1,9 @@
-use crate::kvstore::error::KvResult;
 use super::ThreadPool;
+use crate::kvstore::error::KvResult;
 use std::thread;
 
 #[derive(Debug)]
 pub struct NaiveThreadPool {}
-
 
 impl ThreadPool for NaiveThreadPool {
     fn new(_: i32) -> KvResult<NaiveThreadPool> {
@@ -15,4 +14,3 @@ impl ThreadPool for NaiveThreadPool {
         thread::spawn(f);
     }
 }
-

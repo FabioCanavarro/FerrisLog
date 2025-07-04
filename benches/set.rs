@@ -1,8 +1,14 @@
-use std::{fs::File, sync::{Arc, Mutex}};
+use std::{
+    fs::File,
+    sync::{Arc, Mutex},
+};
 
 use criterion::{black_box, criterion_group, Criterion};
 use crossbeam_utils::sync::WaitGroup;
-use ferris::{concurrency::{rayon::RayonThreadPool, shared::SharedQueueThreadPool, ThreadPool}, kvstore::KvStore};
+use ferris::{
+    concurrency::{rayon::RayonThreadPool, shared::SharedQueueThreadPool, ThreadPool},
+    kvstore::KvStore,
+};
 use tempfile::TempDir;
 
 fn fake_data() -> (String, String) {
@@ -76,15 +82,16 @@ pub fn set_benchmark_shared_pool_4_threads(c: &mut Criterion) {
                     let item_clone = item.clone();
                     // Clone the WaitGroup for each task
                     let wg_clone = wg.clone();
-                    pool.spawn(
-                        move || {
-                            if let Ok(mut store) = store_clone.lock() {
-                                let _ = store.set_bench_specific(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()));
-                            }
-                            // Drop the WaitGroup clone when the task is done
-                            drop(wg_clone);
+                    pool.spawn(move || {
+                        if let Ok(mut store) = store_clone.lock() {
+                            let _ = store.set_bench_specific(
+                                black_box(item_clone.0.clone()),
+                                black_box(item_clone.1.clone()),
+                            );
                         }
-                    );
+                        // Drop the WaitGroup clone when the task is done
+                        drop(wg_clone);
+                    });
                 }
                 // Wait here until all spawned tasks are complete
                 wg.wait();
@@ -114,15 +121,16 @@ pub fn set_benchmark_shared_pool_8_threads(c: &mut Criterion) {
                     let item_clone = item.clone();
                     // Clone the WaitGroup for each task
                     let wg_clone = wg.clone();
-                    pool.spawn(
-                        move || {
-                            if let Ok(mut store) = store_clone.lock() {
-                                let _ = store.set_bench_specific(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()));
-                            }
-                            // Drop the WaitGroup clone when the task is done
-                            drop(wg_clone);
+                    pool.spawn(move || {
+                        if let Ok(mut store) = store_clone.lock() {
+                            let _ = store.set_bench_specific(
+                                black_box(item_clone.0.clone()),
+                                black_box(item_clone.1.clone()),
+                            );
                         }
-                    );
+                        // Drop the WaitGroup clone when the task is done
+                        drop(wg_clone);
+                    });
                 }
                 // Wait here until all spawned tasks are complete
                 wg.wait();
@@ -152,15 +160,16 @@ pub fn set_benchmark_rayon_pool_4_threads(c: &mut Criterion) {
                     let item_clone = item.clone();
                     // Clone the WaitGroup for each task
                     let wg_clone = wg.clone();
-                    pool.spawn(
-                        move || {
-                            if let Ok(mut store) = store_clone.lock() {
-                                let _ = store.set_bench_specific(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()));
-                            }
-                            // Drop the WaitGroup clone when the task is done
-                            drop(wg_clone);
+                    pool.spawn(move || {
+                        if let Ok(mut store) = store_clone.lock() {
+                            let _ = store.set_bench_specific(
+                                black_box(item_clone.0.clone()),
+                                black_box(item_clone.1.clone()),
+                            );
                         }
-                    );
+                        // Drop the WaitGroup clone when the task is done
+                        drop(wg_clone);
+                    });
                 }
                 // Wait here until all spawned tasks are complete
                 wg.wait();
@@ -190,15 +199,16 @@ pub fn set_benchmark_rayon_pool_8_threads(c: &mut Criterion) {
                     let item_clone = item.clone();
                     // Clone the WaitGroup for each task
                     let wg_clone = wg.clone();
-                    pool.spawn(
-                        move || {
-                            if let Ok(mut store) = store_clone.lock() {
-                                let _ = store.set_bench_specific(black_box(item_clone.0.clone()), black_box(item_clone.1.clone()));
-                            }
-                            // Drop the WaitGroup clone when the task is done
-                            drop(wg_clone);
+                    pool.spawn(move || {
+                        if let Ok(mut store) = store_clone.lock() {
+                            let _ = store.set_bench_specific(
+                                black_box(item_clone.0.clone()),
+                                black_box(item_clone.1.clone()),
+                            );
                         }
-                    );
+                        // Drop the WaitGroup clone when the task is done
+                        drop(wg_clone);
+                    });
                 }
                 // Wait here until all spawned tasks are complete
                 wg.wait();
@@ -209,7 +219,7 @@ pub fn set_benchmark_rayon_pool_8_threads(c: &mut Criterion) {
 }
 
 criterion_group!(
-    set_benches, 
+    set_benches,
     single_set_benchmark,
     multi_set_benchmark,
     set_benchmark_shared_pool_4_threads,
