@@ -1,9 +1,5 @@
 use std::{
-    collections::HashMap,
-    fs::{self, create_dir, File},
-    io::{BufRead, BufReader, Read, Seek, SeekFrom, Write},
-    path::{Path, PathBuf},
-    str::FromStr,
+    collections::HashMap, error::Error, fs::{self, create_dir, File}, io::{BufRead, BufReader, Read, Seek, SeekFrom, Write}, path::{Path, PathBuf}, str::FromStr
 };
 pub mod command;
 pub mod error;
@@ -64,7 +60,7 @@ impl KvStore {
 
         let size = fs::metadata(&self.path);
 
-        let length = size.unwrap().len();
+        let length = size.expect("Isnt able to extract the size from the lenght!!!").len();
 
         if length > self.compaction_threshold {
             let _ = self.compaction();
@@ -73,6 +69,27 @@ impl KvStore {
         Ok(())
     }
 
+    pub fn set_bench_specific(&mut self, key: String, val: String) -> Result<(), Box<dyn Error>> {
+        let cmd = Command::set(key.clone(), val.clone());
+
+        // Part 1: Make the open operation atomic and idempotent.
+        let mut f = File::options()
+            .create(true) // Create the file if it doesn't exist.
+            .append(true) // Always write to the end.
+            .open(&self.path)?; // Part 2: Use `?` to propagate errors, NOT .unwrap().
+
+        // Part 2 (continued): Propagate errors for ALL I/O operations.
+        let start_pos = f.seek(SeekFrom::End(0))?;
+
+        // The to_writer can fail, so we map its specific error to our KvError type.
+        serde_json::to_writer(&mut f, &cmd).map_err(|_| KvError::WriteError)?;
+
+        f.write_all(b"\n")?;
+
+        self.table.insert(key, start_pos);
+
+        Ok(())
+    }
     pub fn get(&self, key: String) -> KvResult<Option<String>> {
         let val = self.table.get(&key);
         match &val {
@@ -85,7 +102,7 @@ impl KvStore {
         let mut f = BufReader::new(file);
 
         // Seek from val to the \n
-        let _ = f.seek(SeekFrom::Start(*val.unwrap()));
+        let _ = f.seek(SeekFrom::Start(*val.expect("Isnt able to seek from val to \\n")));
         let mut line = String::new();
         let _ = f.read_line(&mut line);
         let res = serde_json::from_str::<Command>(&line.to_string());
@@ -130,7 +147,7 @@ impl KvStore {
         loop {
             let mut line = String::new();
 
-            let length = buffer.read_line(&mut line).unwrap();
+            let length = buffer.read_line(&mut line).expect("Isnt able to read a line in the log.txt!!!");
             if length == 0 {
                 break;
             }
@@ -173,7 +190,7 @@ impl KvStore {
         loop {
             let mut line = String::new();
 
-            let length = buffer.read_line(&mut line).unwrap();
+            let length = buffer.read_line(&mut line).expect("Isnt able to read the line in log.txt");
             if length == 0 {
                 break;
             }
@@ -207,7 +224,7 @@ impl KvStore {
         for key in self.table.keys() {
             let _ = store.nocompactionset(
                 key.to_string(),
-                self.get(key.to_string()).unwrap().unwrap().to_string(),
+                self.get(key.to_string()).expect("Unable to unwrap the Some(value) from the key").expect("Unable to get the value from the Some(Value)").to_string(),
             );
         }
 

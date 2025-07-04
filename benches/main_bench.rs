@@ -1,5 +1,4 @@
 use criterion::criterion_main;
-
 mod get;
 mod set;
 mod rm;
