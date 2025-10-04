@@ -1,8 +1,8 @@
 use clap::Parser;
-use ferris::concurrency::ThreadPool;
-use ferris::server::engine::Engine;
-use ferris::server::handler::handle_connection;
-use ferris::{concurrency::naive::NaiveThreadPool, kvstore::KvStore};
+use ferris_log::concurrency::ThreadPool;
+use ferris_log::server::engine::Engine;
+use ferris_log::server::handler::handle_connection;
+use ferris_log::{concurrency::naive::NaiveThreadPool, kvstore::KvStore};
 use lazy_static::lazy_static;
 use sled::Db;
 use slog::{info, o, Drain, Logger};

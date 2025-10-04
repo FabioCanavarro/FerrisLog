@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use ferris::kvstore::KvStore;
+use ferris_log::kvstore::KvStore;
 use std::{env::current_dir, path::PathBuf, process::exit, str::FromStr};
 
 #[derive(Parser)]

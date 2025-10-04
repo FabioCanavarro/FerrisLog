@@ -1,5 +1,5 @@
 use assert_cmd::prelude::*;
-use ferris::kvstore::KvStore;
+use ferris_log::kvstore::KvStore;
 use predicates::ord::eq;
 use predicates::str::{contains, PredicateStrExt};
 use std::error::Error;

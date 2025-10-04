@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, Criterion};
-use ferris::kvstore::KvStore;
+use ferris_log::kvstore::KvStore;
 use tempfile::TempDir;
 
 fn fake_data() -> (String, String) {

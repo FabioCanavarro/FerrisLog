@@ -1,11 +1,10 @@
 use std::{
-    fs::File,
     sync::{Arc, Mutex},
 };
 
 use criterion::{black_box, criterion_group, Criterion};
 use crossbeam_utils::sync::WaitGroup;
-use ferris::{
+use ferris_log::{
     concurrency::{rayon::RayonThreadPool, shared::SharedQueueThreadPool, ThreadPool},
     kvstore::KvStore,
 };
