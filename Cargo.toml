@@ -1,5 +1,5 @@
 [package]
-name = "ferris"
+name = "ferris-log"
 version = "1.0.0"
 authors = ["FabioCanavarro"]
 description = "A key-value store"
